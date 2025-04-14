@@ -75,6 +75,13 @@ export default function BoundingBoxCanvas({
     // If we're showing the class menu or hovering a box, don't start drawing
     if (showClassMenu || isHoveringBox) return;
 
+    // If a box is selected and we're clicking outside of it, deselect the box
+    if (selectedBoxIndex !== null) {
+      setSelectedBoxIndex(null);
+      setShowBoxMenu(false);
+      return;
+    }
+
     const start = getRelativeCoordinates(e);
     isDrawingRef.current = true;
     setIsDrawing(true);
@@ -194,6 +201,7 @@ export default function BoundingBoxCanvas({
     e.preventDefault();
     e.stopPropagation();
 
+    // If we're drawing, handle the box creation
     if (isDrawingRef.current && currentBoxRef.current) {
       // Only add box if it has some size
       if (
