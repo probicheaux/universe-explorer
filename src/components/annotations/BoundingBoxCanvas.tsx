@@ -76,10 +76,17 @@ export default function BoundingBoxCanvas({
     if (showClassMenu || isHoveringBox) return;
 
     // If a box is selected and we're clicking outside of it, deselect the box
+    // But only if we're not clicking on the box menu
     if (selectedBoxIndex !== null) {
-      setSelectedBoxIndex(null);
-      setShowBoxMenu(false);
-      return;
+      // Check if the click is on the box menu
+      const target = e.target as HTMLElement;
+      const isClickOnMenu = target.closest(".box-actions-menu") !== null;
+
+      if (!isClickOnMenu) {
+        setSelectedBoxIndex(null);
+        setShowBoxMenu(false);
+        return;
+      }
     }
 
     const start = getRelativeCoordinates(e);
@@ -305,8 +312,11 @@ export default function BoundingBoxCanvas({
   };
 
   const handleDeleteBox = () => {
+    console.log("Delete box clicked, selectedBoxIndex:", selectedBoxIndex);
     if (selectedBoxIndex !== null) {
+      console.log("Deleting box at index:", selectedBoxIndex);
       const newBoxes = boxes.filter((_, i) => i !== selectedBoxIndex);
+      console.log("New boxes array:", newBoxes);
       setBoxes(newBoxes);
       onBoxesChange?.(newBoxes);
       setSelectedBoxIndex(null);
@@ -459,7 +469,7 @@ export default function BoundingBoxCanvas({
       {/* Box Actions Menu */}
       {showBoxMenu && selectedBoxIndex !== null && (
         <div
-          className="fixed z-20 bg-gray-900/90 backdrop-blur-md rounded-lg shadow-lg p-2 min-w-[150px]"
+          className="fixed z-20 bg-gray-900/90 backdrop-blur-md rounded-lg shadow-lg p-2 min-w-[150px] box-actions-menu"
           style={{
             left: menuPosition.x,
             top: menuPosition.y,
@@ -470,24 +480,47 @@ export default function BoundingBoxCanvas({
             <div className="text-xs text-gray-400">Box Actions:</div>
             <button
               onClick={() => setShowBoxMenu(false)}
-              className="text-gray-500 hover:text-gray-300 text-xs"
+              className="text-gray-500 hover:text-gray-300 text-xs cursor-pointer"
             >
               ×
             </button>
           </div>
           <div className="flex flex-col gap-1">
             <button
-              className="text-left px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-gray-800 transition-colors"
-              onClick={handleDeleteBox}
+              className="text-left px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-gray-800 transition-colors flex items-center gap-2 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteBox();
+              }}
             >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
               Delete Box
             </button>
             <div className="px-2 py-1 text-xs text-gray-400">Change Class:</div>
             {availableClasses.map((cls) => (
               <button
                 key={cls}
-                className="text-left px-3 py-1.5 rounded-md text-sm hover:bg-gray-800 transition-colors"
-                onClick={() => handleChangeClass(cls)}
+                className="text-left px-3 py-1.5 rounded-md text-sm hover:bg-gray-800 transition-colors cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleChangeClass(cls);
+                }}
                 style={{
                   color: classColors[cls],
                 }}
