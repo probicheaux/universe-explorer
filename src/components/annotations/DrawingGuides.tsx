@@ -7,9 +7,9 @@ interface Point {
 
 interface DrawingGuidesProps {
   mousePosition: Point;
-  selectedClass?: string;
-  color?: string;
-  isHidden?: boolean;
+  selectedClass: string | undefined;
+  color: string | undefined;
+  isHidden: boolean | undefined;
 }
 
 function DrawingGuides({

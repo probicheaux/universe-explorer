@@ -69,11 +69,7 @@ export default function UniverseExplorer() {
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 relative overflow-hidden">
-            <ImageArea
-              image={image}
-              onImageChange={handleImageChange}
-              isAnnotationMode={!!(image && prompt)}
-            />
+            <ImageArea image={image} onImageChange={handleImageChange} />
             {image && prompt && (
               <BoundingBoxCanvas
                 selectedClass={selectedClass}

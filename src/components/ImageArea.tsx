@@ -2,11 +2,16 @@ import { useState } from "react";
 import Image from "next/image";
 
 interface ImageAreaProps {
-  image?: string;
-  onImageChange?: (imageData: string) => void;
+  image: string | undefined;
+  onImageChange: ((imageData: string) => void) | undefined;
+  isAnnotationMode: boolean | undefined;
 }
 
-export default function ImageArea({ image, onImageChange }: ImageAreaProps) {
+export default function ImageArea({
+  image,
+  onImageChange,
+  isAnnotationMode = false,
+}: ImageAreaProps) {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {

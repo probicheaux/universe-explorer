@@ -9,13 +9,13 @@ export interface BoundingBoxProps {
   start: Point;
   end: Point;
   label: string;
-  color?: string;
-  isSelected?: boolean;
-  onHover?: (isHovering: boolean) => void;
-  onClick?: () => void;
-  onResizeStart?: (handle: string) => void;
-  onMoveStart?: () => void;
-  onMenuOpen?: () => void;
+  color: string | undefined;
+  isSelected: boolean | undefined;
+  onHover: ((isHovering: boolean) => void) | undefined;
+  onClick: (() => void) | undefined;
+  onResizeStart: ((handle: string) => void) | undefined;
+  onMoveStart: (() => void) | undefined;
+  onMenuOpen: (() => void) | undefined;
 }
 
 // Generate a consistent color based on the class name

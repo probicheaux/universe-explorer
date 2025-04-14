@@ -504,6 +504,12 @@ export default function BoundingBoxCanvas({
           end={currentBox.end}
           label={currentBox.label}
           color={currentBox.color}
+          isSelected={false}
+          onHover={undefined}
+          onClick={undefined}
+          onResizeStart={undefined}
+          onMoveStart={undefined}
+          onMenuOpen={undefined}
         />
       )}
 
@@ -514,6 +520,12 @@ export default function BoundingBoxCanvas({
           end={pendingBox.end}
           label={pendingBox.label}
           color={pendingBox.color}
+          isSelected={false}
+          onHover={undefined}
+          onClick={undefined}
+          onResizeStart={undefined}
+          onMoveStart={undefined}
+          onMenuOpen={undefined}
         />
       )}
 

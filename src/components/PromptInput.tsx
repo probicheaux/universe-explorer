@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 interface PromptInputProps {
   onSubmit: (prompt: string) => void;
   onComplete: (data: { prompt: string }) => void;
-  initialValue?: string;
+  initialValue: string | undefined;
   onBlur?: () => void;
 }
 
