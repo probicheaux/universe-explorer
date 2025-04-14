@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import BoundingBox from "./BoundingBox";
 import DrawingGuides from "./DrawingGuides";
 
@@ -37,125 +37,184 @@ export default function BoundingBoxCanvas({
   const [showClassMenu, setShowClassMenu] = useState(false);
   const [pendingBox, setPendingBox] = useState<BoundingBoxData | null>(null);
   const [menuPosition, setMenuPosition] = useState<Point>({ x: 0, y: 0 });
+  const [selectedBoxIndex, setSelectedBoxIndex] = useState<number | null>(null);
+  const [isHoveringBox, setIsHoveringBox] = useState(false);
 
-  const getRelativeCoordinates = (e: React.MouseEvent): Point => {
+  const getRelativeCoordinates = useCallback((e: React.MouseEvent): Point => {
     if (!canvasRef.current) return { x: 0, y: 0 };
     const rect = canvasRef.current.getBoundingClientRect();
     return {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     };
-  };
+  }, []);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-    // If we're showing the class menu, don't start a new box
-    if (showClassMenu) return;
+      // If we're showing the class menu or hovering a box, don't start drawing
+      if (showClassMenu || isHoveringBox) return;
 
-    setIsDrawing(true);
-    const start = getRelativeCoordinates(e);
+      setIsDrawing(true);
+      const start = getRelativeCoordinates(e);
 
-    // If we have a selected class, use it
-    if (selectedClass) {
-      setCurrentBox({
-        start,
-        end: start,
-        label: selectedClass,
-        color: classColors[selectedClass],
-      });
-    } else {
-      // Otherwise, create a temporary box with a placeholder label
-      setCurrentBox({ start, end: start, label: "Select class..." });
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const position = getRelativeCoordinates(e);
-    setMousePosition(position);
-
-    if (isDrawing && currentBox) {
-      setCurrentBox({ ...currentBox, end: position });
-    }
-  };
-
-  const handleMouseUp = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!isDrawing || !currentBox) return;
-
-    // Only add box if it has some size
-    if (
-      Math.abs(currentBox.end.x - currentBox.start.x) > 5 &&
-      Math.abs(currentBox.end.y - currentBox.start.y) > 5
-    ) {
-      // If we have a selected class, add the box directly
+      // If we have a selected class, use it
       if (selectedClass) {
-        const newBoxes = [...boxes, currentBox];
+        setCurrentBox({
+          start,
+          end: start,
+          label: selectedClass,
+          color: classColors[selectedClass],
+        });
+      } else {
+        // Otherwise, create a temporary box with a placeholder label
+        setCurrentBox({ start, end: start, label: "Select class..." });
+      }
+    },
+    [
+      showClassMenu,
+      isHoveringBox,
+      selectedClass,
+      classColors,
+      getRelativeCoordinates,
+    ]
+  );
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const position = getRelativeCoordinates(e);
+      setMousePosition(position);
+
+      if (isDrawing && currentBox) {
+        setCurrentBox({ ...currentBox, end: position });
+      }
+    },
+    [isDrawing, currentBox, getRelativeCoordinates]
+  );
+
+  const handleMouseUp = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!isDrawing || !currentBox) return;
+
+      // Only add box if it has some size
+      if (
+        Math.abs(currentBox.end.x - currentBox.start.x) > 5 &&
+        Math.abs(currentBox.end.y - currentBox.start.y) > 5
+      ) {
+        // If we have a selected class, add the box directly
+        if (selectedClass) {
+          const newBoxes = [...boxes, currentBox];
+          setBoxes(newBoxes);
+          onBoxesChange?.(newBoxes);
+        } else {
+          // Otherwise, show the class selection menu
+          setPendingBox(currentBox);
+
+          // Position the menu right next to the cursor
+          setMenuPosition({
+            x: e.clientX,
+            y: e.clientY,
+          });
+
+          setShowClassMenu(true);
+        }
+      }
+
+      setIsDrawing(false);
+      setCurrentBox(null);
+    },
+    [isDrawing, currentBox, selectedClass, boxes, onBoxesChange]
+  );
+
+  const handleClassSelect = useCallback(
+    (className: string) => {
+      if (pendingBox && onClassSelect) {
+        // Update the box with the selected class
+        const updatedBox = {
+          ...pendingBox,
+          label: className,
+          color: classColors[className],
+        };
+        const newBoxes = [...boxes, updatedBox];
         setBoxes(newBoxes);
         onBoxesChange?.(newBoxes);
-      } else {
-        // Otherwise, show the class selection menu
-        setPendingBox(currentBox);
 
-        // Position the menu right next to the cursor
-        setMenuPosition({
-          x: e.clientX,
-          y: e.clientY,
-        });
-
-        setShowClassMenu(true);
+        // Select the class for future boxes
+        onClassSelect(className);
       }
-    }
 
-    setIsDrawing(false);
-    setCurrentBox(null);
-  };
+      setShowClassMenu(false);
+      setPendingBox(null);
+    },
+    [pendingBox, onClassSelect, classColors, boxes, onBoxesChange]
+  );
 
-  const handleClassSelect = (className: string) => {
-    if (pendingBox && onClassSelect) {
-      // Update the box with the selected class
-      const updatedBox = {
-        ...pendingBox,
-        label: className,
-        color: classColors[className],
-      };
-      const newBoxes = [...boxes, updatedBox];
-      setBoxes(newBoxes);
-      onBoxesChange?.(newBoxes);
-
-      // Select the class for future boxes
-      onClassSelect(className);
-    }
-
+  const handleCloseMenu = useCallback(() => {
     setShowClassMenu(false);
     setPendingBox(null);
-  };
+  }, []);
 
-  const handleCloseMenu = () => {
-    setShowClassMenu(false);
-    setPendingBox(null);
-  };
+  const handleBoxHover = useCallback((isHovering: boolean) => {
+    setIsHoveringBox(isHovering);
+  }, []);
 
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === "Delete" && boxes.length > 0) {
-      const newBoxes = boxes.slice(0, -1);
+  const handleBoxClick = useCallback((index: number) => {
+    setSelectedBoxIndex(index);
+  }, []);
+
+  const handleDeleteBox = useCallback(() => {
+    if (selectedBoxIndex !== null) {
+      const newBoxes = boxes.filter((_, i) => i !== selectedBoxIndex);
       setBoxes(newBoxes);
       onBoxesChange?.(newBoxes);
-    } else if (e.key === "Escape" && showClassMenu) {
-      handleCloseMenu();
+      setSelectedBoxIndex(null);
     }
-  };
+  }, [selectedBoxIndex, boxes, onBoxesChange]);
+
+  const handleChangeClass = useCallback(
+    (className: string) => {
+      if (selectedBoxIndex !== null) {
+        const newBoxes = [...boxes];
+        newBoxes[selectedBoxIndex] = {
+          ...newBoxes[selectedBoxIndex],
+          label: className,
+          color: classColors[className],
+        };
+        setBoxes(newBoxes);
+        onBoxesChange?.(newBoxes);
+        setSelectedBoxIndex(null);
+      }
+    },
+    [selectedBoxIndex, boxes, onBoxesChange, classColors]
+  );
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Delete" && selectedBoxIndex !== null) {
+        handleDeleteBox();
+      } else if (e.key === "Escape") {
+        if (showClassMenu) {
+          handleCloseMenu();
+        } else if (selectedBoxIndex !== null) {
+          setSelectedBoxIndex(null);
+        }
+      }
+    },
+    [selectedBoxIndex, showClassMenu, handleDeleteBox, handleCloseMenu]
+  );
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [boxes, showClassMenu, onBoxesChange]);
+  }, [handleKeyDown]);
 
   return (
     <div
@@ -172,6 +231,7 @@ export default function BoundingBoxCanvas({
         mousePosition={mousePosition}
         selectedClass={selectedClass}
         color={selectedClass ? classColors[selectedClass] : undefined}
+        isHidden={isHoveringBox || selectedBoxIndex !== null}
       />
 
       {/* Existing Boxes */}
@@ -182,6 +242,9 @@ export default function BoundingBoxCanvas({
           end={box.end}
           label={box.label}
           color={box.color}
+          isSelected={index === selectedBoxIndex}
+          onHover={handleBoxHover}
+          onClick={() => handleBoxClick(index)}
         />
       ))}
 
@@ -191,7 +254,6 @@ export default function BoundingBoxCanvas({
           start={currentBox.start}
           end={currentBox.end}
           label={currentBox.label}
-          isActive={true}
           color={currentBox.color}
         />
       )}
@@ -202,7 +264,6 @@ export default function BoundingBoxCanvas({
           start={pendingBox.start}
           end={pendingBox.end}
           label={pendingBox.label}
-          isActive={true}
           color={pendingBox.color}
         />
       )}
@@ -232,6 +293,48 @@ export default function BoundingBoxCanvas({
                 key={cls}
                 className="text-left px-3 py-1.5 rounded-md text-sm text-gray-200 hover:bg-gray-800 transition-colors"
                 onClick={() => handleClassSelect(cls)}
+                style={{
+                  color: classColors[cls],
+                }}
+              >
+                {cls}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Box Actions Menu */}
+      {selectedBoxIndex !== null && (
+        <div
+          className="fixed z-20 bg-gray-900/90 backdrop-blur-md rounded-lg shadow-lg p-2 min-w-[150px]"
+          style={{
+            left: mousePosition.x + 10,
+            top: mousePosition.y + 10,
+          }}
+        >
+          <div className="flex justify-between items-center mb-2 px-2">
+            <div className="text-xs text-gray-400">Box Actions:</div>
+            <button
+              onClick={() => setSelectedBoxIndex(null)}
+              className="text-gray-500 hover:text-gray-300 text-xs"
+            >
+              ×
+            </button>
+          </div>
+          <div className="flex flex-col gap-1">
+            <button
+              className="text-left px-3 py-1.5 rounded-md text-sm text-red-400 hover:bg-gray-800 transition-colors"
+              onClick={handleDeleteBox}
+            >
+              Delete Box
+            </button>
+            <div className="px-2 py-1 text-xs text-gray-400">Change Class:</div>
+            {availableClasses.map((cls) => (
+              <button
+                key={cls}
+                className="text-left px-3 py-1.5 rounded-md text-sm hover:bg-gray-800 transition-colors"
+                onClick={() => handleChangeClass(cls)}
                 style={{
                   color: classColors[cls],
                 }}

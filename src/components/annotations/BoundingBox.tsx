@@ -3,12 +3,14 @@ interface Point {
   y: number;
 }
 
-interface BoundingBoxProps {
+export interface BoundingBoxProps {
   start: Point;
   end: Point;
   label: string;
-  isActive?: boolean;
   color?: string;
+  isSelected?: boolean;
+  onHover?: (isHovering: boolean) => void;
+  onClick?: () => void;
 }
 
 // Generate a consistent color based on the class name
@@ -25,40 +27,54 @@ export default function BoundingBox({
   start,
   end,
   label,
-  isActive = false,
-  color: providedColor,
+  color = "#666666",
+  isSelected = false,
+  onHover,
+  onClick,
 }: BoundingBoxProps) {
   const left = Math.min(start.x, end.x);
   const top = Math.min(start.y, end.y);
   const width = Math.abs(end.x - start.x);
   const height = Math.abs(end.y - start.y);
 
-  // Use provided color or generate one based on label
-  const color = providedColor || getColorForLabel(label);
-
-  // Create a slightly transparent version of the color for the background
-  const bgColor = color + "20"; // 20 is hex for 12% opacity
-
   return (
     <div
-      className={`absolute border-2 ${
-        isActive ? "border-opacity-100" : "border-opacity-80"
+      className={`absolute group ${isSelected ? "z-20" : "z-10"} ${
+        isSelected ? "cursor-pointer" : "cursor-default"
       }`}
       style={{
         left,
         top,
         width,
         height,
-        borderColor: color,
-        backgroundColor: bgColor,
+        border: `2px solid ${color}`,
+        backgroundColor: isSelected ? `${color}33` : "transparent",
+        transition: "background-color 0.2s ease-in-out",
       }}
+      onMouseEnter={() => onHover?.(true)}
+      onMouseLeave={() => onHover?.(false)}
+      onClick={onClick}
     >
+      {/* Label */}
       <div
-        className="absolute -top-6 left-0 text-white text-xs px-2 py-1 rounded"
-        style={{ backgroundColor: color }}
+        className="absolute -top-6 left-0 px-2 py-1 rounded-t-md text-xs font-medium whitespace-nowrap"
+        style={{
+          backgroundColor: color,
+          color: "#fff",
+        }}
       >
         {label}
       </div>
+
+      {/* Selection Overlay */}
+      {isSelected && (
+        <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]" />
+      )}
+
+      {/* Hover Indicator */}
+      {!isSelected && (
+        <div className="absolute inset-0 border-2 border-dashed border-white/30 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
+      )}
     </div>
   );
 }

@@ -9,12 +9,14 @@ interface DrawingGuidesProps {
   mousePosition: Point;
   selectedClass?: string;
   color?: string;
+  isHidden?: boolean;
 }
 
 export default function DrawingGuides({
   mousePosition,
   selectedClass,
   color,
+  isHidden = false,
 }: DrawingGuidesProps) {
   const { x, y } = mousePosition;
 
@@ -22,6 +24,8 @@ export default function DrawingGuides({
     if (!color) return "rgba(255, 255, 255, 0.3)";
     return color;
   }, [color]);
+
+  if (isHidden) return null;
 
   return (
     <>
