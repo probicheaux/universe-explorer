@@ -1,10 +1,13 @@
 "use client";
 
+import { useRef } from "react";
 import ImageUploader from "./ImageUploader";
 import PromptInput from "./PromptInput";
-import Stepper from "./Stepper";
+import Stepper, { StepperRef } from "./Stepper";
 
 export default function UniverseExplorer() {
+  const stepperRef = useRef<StepperRef>(null);
+
   const steps = [
     {
       id: 1,
@@ -17,6 +20,7 @@ export default function UniverseExplorer() {
           }}
           onComplete={(data) => {
             console.log("Image upload complete:", data);
+            stepperRef.current?.completeStep(1, data);
           }}
         />
       ),
@@ -32,6 +36,7 @@ export default function UniverseExplorer() {
           }}
           onComplete={(data) => {
             console.log("Prompt complete:", data);
+            stepperRef.current?.completeStep(2, data);
           }}
         />
       ),
@@ -50,7 +55,7 @@ export default function UniverseExplorer() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6">
-      <Stepper steps={steps} />
+      <Stepper ref={stepperRef} steps={steps} />
     </div>
   );
 }
