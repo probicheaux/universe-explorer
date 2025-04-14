@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo } from "react";
 
 interface Point {
   x: number;
@@ -12,18 +12,14 @@ interface DrawingGuidesProps {
   isHidden?: boolean;
 }
 
-export default function DrawingGuides({
+function DrawingGuides({
   mousePosition,
   selectedClass,
   color,
   isHidden = false,
 }: DrawingGuidesProps) {
   const { x, y } = mousePosition;
-
-  const guideColor = useMemo(() => {
-    if (!color) return "rgba(255, 255, 255, 0.3)";
-    return color;
-  }, [color]);
+  const guideColor = color || "rgba(255, 255, 255, 0.3)";
 
   if (isHidden) return null;
 
@@ -66,3 +62,6 @@ export default function DrawingGuides({
     </>
   );
 }
+
+// Memoize the component to prevent unnecessary re-renders
+export default memo(DrawingGuides);

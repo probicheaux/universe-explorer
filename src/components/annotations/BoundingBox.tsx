@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 interface Point {
   x: number;
   y: number;
@@ -23,7 +25,7 @@ export const getColorForLabel = (label: string) => {
   return `hsl(${hue}, 70%, 50%)`;
 };
 
-export default function BoundingBox({
+function BoundingBox({
   start,
   end,
   label,
@@ -49,7 +51,7 @@ export default function BoundingBox({
         height,
         border: `2px solid ${color}`,
         backgroundColor: isSelected ? `${color}33` : "transparent",
-        transition: "all 0.2s ease-in-out",
+        transition: "background-color 0.2s ease-in-out",
       }}
       onMouseEnter={() => onHover?.(true)}
       onMouseLeave={() => onHover?.(false)}
@@ -88,3 +90,6 @@ export default function BoundingBox({
     </div>
   );
 }
+
+// Memoize the component to prevent unnecessary re-renders
+export default memo(BoundingBox);
