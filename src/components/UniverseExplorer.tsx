@@ -4,8 +4,11 @@ import { useState, useMemo, useEffect } from "react";
 import ImageArea from "./ImageArea";
 import PromptArea from "./PromptArea";
 import AnnotationToolbar from "./AnnotationToolbar";
+import ModelsToolbar from "./ModelsToolbar";
 import BoundingBoxCanvas from "./annotations/BoundingBoxCanvas";
+import ResultsCanvas from "./annotations/ResultsCanvas";
 import FindModelButton from "./FindModelButton";
+import Tabs, { TabType } from "./Tabs";
 import { getColorForLabel } from "../utils/colors";
 import api from "@/utils/api";
 
@@ -17,6 +20,8 @@ export default function UniverseExplorer() {
   const [taskType] = useState<string>("Object Detection");
   const [boxes, setBoxes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>("find");
+  const [inferenceResults, setInferenceResults] = useState<any[]>([]);
 
   // Generate colors for all classes
   const classColors = useMemo(() => {
@@ -64,6 +69,13 @@ export default function UniverseExplorer() {
       const response = await api.inference.inferImage(base64Data);
 
       console.log("Model inference result:", response);
+
+      // Switch to results tab after successful inference
+      setActiveTab("results");
+
+      // For now, we'll just use hardcoded results
+      // In the future, we'll parse the actual response
+      setInferenceResults([]);
     } catch (error) {
       console.error("Error finding model:", error);
     } finally {
@@ -71,29 +83,35 @@ export default function UniverseExplorer() {
     }
   };
 
-  const canFindModel = image && prompt && boxes.length > 0;
+  const handleModelSelect = (modelId: string) => {
+    console.log("Selected model:", modelId);
+    // In the future, we'll load the specific model's results
+  };
 
-  console.log("\n\nCan find model\n\n");
-  console.log(canFindModel);
+  const canFindModel = image && prompt && boxes.length > 0;
 
   return (
     <div className="flex flex-col h-full bg-gray-950 text-white">
       <div className="flex-1 flex overflow-hidden">
-        {/* Annotation Toolbar */}
+        {/* Toolbar - switches between Annotation and Models */}
         <div
           className={`transition-all duration-500 ease-in-out ${
             image && prompt ? "w-64" : "w-0"
           } overflow-hidden`}
         >
           <div className="w-64 h-full">
-            <AnnotationToolbar
-              taskType={taskType}
-              classes={classes}
-              onClassesChange={handleClassesChange}
-              selectedClass={selectedClass}
-              onClassSelect={handleClassSelect}
-              classColors={classColors}
-            />
+            {activeTab === "find" ? (
+              <AnnotationToolbar
+                taskType={taskType}
+                classes={classes}
+                onClassesChange={handleClassesChange}
+                selectedClass={selectedClass}
+                onClassSelect={handleClassSelect}
+                classColors={classColors}
+              />
+            ) : (
+              <ModelsToolbar onModelSelect={handleModelSelect} />
+            )}
           </div>
         </div>
 
@@ -101,7 +119,14 @@ export default function UniverseExplorer() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 relative overflow-hidden">
             <ImageArea image={image} onImageChange={handleImageChange} />
+
+            {/* Tabs for switching between Find and Results */}
             {image && prompt && (
+              <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
+            )}
+
+            {/* Canvas - switches between BoundingBox and Results */}
+            {image && prompt && activeTab === "find" && (
               <BoundingBoxCanvas
                 selectedClass={selectedClass}
                 availableClasses={classes}
@@ -111,8 +136,12 @@ export default function UniverseExplorer() {
               />
             )}
 
+            {image && prompt && activeTab === "results" && (
+              <ResultsCanvas image={image} results={inferenceResults} />
+            )}
+
             {/* Find Model Button */}
-            {canFindModel && (
+            {canFindModel && activeTab === "find" && (
               <FindModelButton
                 onClick={handleFindModel}
                 isLoading={isLoading}
