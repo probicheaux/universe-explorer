@@ -75,7 +75,7 @@ export default function UniverseExplorer() {
 
       // For now, we'll just use hardcoded results
       // In the future, we'll parse the actual response
-      setInferenceResults([]);
+      setInferenceResults([response]);
     } catch (error) {
       console.error("Error finding model:", error);
     } finally {
@@ -121,7 +121,7 @@ export default function UniverseExplorer() {
             <ImageArea image={image} onImageChange={handleImageChange} />
 
             {/* Tabs for switching between Find and Results */}
-            {image && prompt && (
+            {image && prompt && inferenceResults.length > 0 && (
               <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
             )}
 
@@ -137,7 +137,7 @@ export default function UniverseExplorer() {
             )}
 
             {image && prompt && activeTab === "results" && (
-              <ResultsCanvas image={image} results={inferenceResults} />
+              <ResultsCanvas results={inferenceResults} />
             )}
 
             {/* Find Model Button */}

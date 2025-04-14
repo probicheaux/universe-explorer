@@ -1,5 +1,6 @@
 // Generate a consistent color based on the class name
 export const getColorForLabel = (label: string): string => {
+  if (!label) return "#000000";
   // Use a simple hash function to generate a consistent color for each label
   let hash = 0;
   for (let i = 0; i < label.length; i++) {

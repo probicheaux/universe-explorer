@@ -4,6 +4,7 @@ import { getEnv } from "@/utils/environment";
 const BASE_URL = "https://serverless.roboflow.com/";
 
 type BoundingBoxPrediction = {
+  class: string;
   x: number;
   y: number;
   width: number;

@@ -1,18 +1,14 @@
 import React from "react";
 import { getColorForLabel } from "@/utils/colors";
+import { InferImageResponse } from "@/adapters/roboflowAdapter";
 
 interface ResultsCanvasProps {
-  image: string;
-  // This will be replaced with real data later
-  results?: any[];
+  results: InferImageResponse[];
 }
 
-export default function ResultsCanvas({
-  image,
-  results = [],
-}: ResultsCanvasProps) {
+export default function ResultsCanvas({ results = [] }: ResultsCanvasProps) {
   // For now, we'll use hardcoded boxes for demonstration
-  const hardcodedBoxes = [
+  const hardcodedBoxes: InferImageResponse["predictions"] = [
     {
       class: "person",
       x: 100,
@@ -32,7 +28,7 @@ export default function ResultsCanvas({
     },
   ];
 
-  const boxesToDisplay = results.length > 0 ? results : hardcodedBoxes;
+  const boxesToDisplay = hardcodedBoxes;
 
   return (
     <div className="absolute inset-0 z-10">
