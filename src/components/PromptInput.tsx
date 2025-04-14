@@ -4,11 +4,13 @@ import { useState, ChangeEvent, FormEvent } from "react";
 
 interface PromptInputProps {
   onSubmit: (prompt: string) => void;
+  onComplete: (data: { prompt: string }) => void;
   disabled?: boolean;
 }
 
 export default function PromptInput({
   onSubmit,
+  onComplete,
   disabled = false,
 }: PromptInputProps) {
   const [prompt, setPrompt] = useState("");
@@ -21,6 +23,7 @@ export default function PromptInput({
     e.preventDefault();
     if (prompt.trim()) {
       onSubmit(prompt);
+      onComplete({ prompt });
     }
   };
 
