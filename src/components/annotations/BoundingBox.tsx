@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 
 interface Point {
   x: number;
@@ -15,6 +15,7 @@ export interface BoundingBoxProps {
   onClick?: () => void;
   onResizeStart?: (handle: string) => void;
   onMoveStart?: () => void;
+  onMenuOpen?: () => void;
 }
 
 // Generate a consistent color based on the class name
@@ -37,11 +38,13 @@ function BoundingBox({
   onClick,
   onResizeStart,
   onMoveStart,
+  onMenuOpen,
 }: BoundingBoxProps) {
   const left = Math.min(start.x, end.x);
   const top = Math.min(start.y, end.y);
   const width = Math.abs(end.x - start.x);
   const height = Math.abs(end.y - start.y);
+  const [isMenuHovered, setIsMenuHovered] = useState(false);
 
   // Handle resize start
   const handleResizeStart = (e: React.MouseEvent, handle: string) => {
@@ -53,6 +56,12 @@ function BoundingBox({
   const handleMoveStart = (e: React.MouseEvent) => {
     e.stopPropagation();
     onMoveStart?.();
+  };
+
+  // Handle menu button click
+  const handleMenuClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onMenuOpen?.();
   };
 
   return (
@@ -83,6 +92,35 @@ function BoundingBox({
         }}
       >
         {label}
+      </div>
+
+      {/* Three Dots Menu Button */}
+      <div
+        className={`absolute -top-6 right-0 w-6 h-6 flex items-center justify-center rounded-t-md text-white opacity-0 group-hover:opacity-100 transition-opacity duration-150 ${
+          isMenuHovered ? "opacity-100" : ""
+        }`}
+        style={{
+          backgroundColor: color,
+        }}
+        onMouseEnter={() => setIsMenuHovered(true)}
+        onMouseLeave={() => setIsMenuHovered(false)}
+        onClick={handleMenuClick}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="1"></circle>
+          <circle cx="12" cy="5" r="1"></circle>
+          <circle cx="12" cy="19" r="1"></circle>
+        </svg>
       </div>
 
       {/* Selection Overlay */}

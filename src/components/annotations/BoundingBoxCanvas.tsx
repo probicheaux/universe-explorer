@@ -39,6 +39,7 @@ export default function BoundingBoxCanvas({
   const [menuPosition, setMenuPosition] = useState<Point>({ x: 0, y: 0 });
   const [selectedBoxIndex, setSelectedBoxIndex] = useState<number | null>(null);
   const [isHoveringBox, setIsHoveringBox] = useState(false);
+  const [showBoxMenu, setShowBoxMenu] = useState(false);
 
   // New state for move and resize operations
   const [isMoving, setIsMoving] = useState(false);
@@ -271,7 +272,15 @@ export default function BoundingBoxCanvas({
   };
 
   const handleBoxClick = (index: number) => {
+    // Just select the box, don't open the menu
     setSelectedBoxIndex(index);
+    setShowBoxMenu(false);
+  };
+
+  const handleMenuOpen = (index: number) => {
+    // Select the box and open the menu
+    setSelectedBoxIndex(index);
+    setShowBoxMenu(true);
     // Get the box position for menu placement
     if (canvasRef.current && boxes[index]) {
       const box = boxes[index];
@@ -293,6 +302,7 @@ export default function BoundingBoxCanvas({
       setBoxes(newBoxes);
       onBoxesChange?.(newBoxes);
       setSelectedBoxIndex(null);
+      setShowBoxMenu(false);
     }
   };
 
@@ -307,6 +317,7 @@ export default function BoundingBoxCanvas({
       setBoxes(newBoxes);
       onBoxesChange?.(newBoxes);
       setSelectedBoxIndex(null);
+      setShowBoxMenu(false);
     }
   };
 
@@ -333,6 +344,8 @@ export default function BoundingBoxCanvas({
     } else if (e.key === "Escape") {
       if (showClassMenu) {
         handleCloseMenu();
+      } else if (showBoxMenu) {
+        setShowBoxMenu(false);
       } else if (selectedBoxIndex !== null) {
         setSelectedBoxIndex(null);
       }
@@ -342,7 +355,7 @@ export default function BoundingBoxCanvas({
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedBoxIndex, showClassMenu]);
+  }, [selectedBoxIndex, showClassMenu, showBoxMenu]);
 
   return (
     <div
@@ -375,6 +388,7 @@ export default function BoundingBoxCanvas({
           onClick={() => handleBoxClick(index)}
           onMoveStart={handleMoveStart}
           onResizeStart={handleResizeStart}
+          onMenuOpen={() => handleMenuOpen(index)}
         />
       ))}
 
@@ -435,7 +449,7 @@ export default function BoundingBoxCanvas({
       )}
 
       {/* Box Actions Menu */}
-      {selectedBoxIndex !== null && (
+      {showBoxMenu && selectedBoxIndex !== null && (
         <div
           className="fixed z-20 bg-gray-900/90 backdrop-blur-md rounded-lg shadow-lg p-2 min-w-[150px]"
           style={{
@@ -447,7 +461,7 @@ export default function BoundingBoxCanvas({
           <div className="flex justify-between items-center mb-2 px-2">
             <div className="text-xs text-gray-400">Box Actions:</div>
             <button
-              onClick={() => setSelectedBoxIndex(null)}
+              onClick={() => setShowBoxMenu(false)}
               className="text-gray-500 hover:text-gray-300 text-xs"
             >
               ×
