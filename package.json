@@ -13,9 +13,12 @@
     "dev:all": "concurrently \"next dev --turbopack\" \"tsc --noEmit --watch\" \"next lint --watch\""
   },
   "dependencies": {
+    "@elastic/elasticsearch": "^8.17.1",
+    "@vercel/edge-config": "^1.4.0",
     "next": "15.3.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "redis": "^4.7.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
