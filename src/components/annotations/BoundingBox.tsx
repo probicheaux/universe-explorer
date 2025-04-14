@@ -13,6 +13,8 @@ export interface BoundingBoxProps {
   isSelected?: boolean;
   onHover?: (isHovering: boolean) => void;
   onClick?: () => void;
+  onResizeStart?: (handle: string) => void;
+  onMoveStart?: () => void;
 }
 
 // Generate a consistent color based on the class name
@@ -33,11 +35,25 @@ function BoundingBox({
   isSelected = false,
   onHover,
   onClick,
+  onResizeStart,
+  onMoveStart,
 }: BoundingBoxProps) {
   const left = Math.min(start.x, end.x);
   const top = Math.min(start.y, end.y);
   const width = Math.abs(end.x - start.x);
   const height = Math.abs(end.y - start.y);
+
+  // Handle resize start
+  const handleResizeStart = (e: React.MouseEvent, handle: string) => {
+    e.stopPropagation();
+    onResizeStart?.(handle);
+  };
+
+  // Handle move start
+  const handleMoveStart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onMoveStart?.();
+  };
 
   return (
     <div
@@ -56,6 +72,7 @@ function BoundingBox({
       onMouseEnter={() => onHover?.(true)}
       onMouseLeave={() => onHover?.(false)}
       onClick={onClick}
+      onMouseDown={isSelected ? handleMoveStart : undefined}
     >
       {/* Label */}
       <div
@@ -86,6 +103,35 @@ function BoundingBox({
             backgroundColor: `${color}22`,
           }}
         />
+      )}
+
+      {/* Corner Resize Handles - Only show when selected */}
+      {isSelected && (
+        <>
+          {/* Top-left handle */}
+          <div
+            className="absolute w-3 h-3 bg-white border border-gray-700 rounded-full -top-1.5 -left-1.5 cursor-nw-resize"
+            onMouseDown={(e) => handleResizeStart(e, "nw")}
+          />
+
+          {/* Top-right handle */}
+          <div
+            className="absolute w-3 h-3 bg-white border border-gray-700 rounded-full -top-1.5 -right-1.5 cursor-ne-resize"
+            onMouseDown={(e) => handleResizeStart(e, "ne")}
+          />
+
+          {/* Bottom-left handle */}
+          <div
+            className="absolute w-3 h-3 bg-white border border-gray-700 rounded-full -bottom-1.5 -left-1.5 cursor-sw-resize"
+            onMouseDown={(e) => handleResizeStart(e, "sw")}
+          />
+
+          {/* Bottom-right handle */}
+          <div
+            className="absolute w-3 h-3 bg-white border border-gray-700 rounded-full -bottom-1.5 -right-1.5 cursor-se-resize"
+            onMouseDown={(e) => handleResizeStart(e, "se")}
+          />
+        </>
       )}
     </div>
   );

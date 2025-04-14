@@ -40,6 +40,15 @@ export default function BoundingBoxCanvas({
   const [selectedBoxIndex, setSelectedBoxIndex] = useState<number | null>(null);
   const [isHoveringBox, setIsHoveringBox] = useState(false);
 
+  // New state for move and resize operations
+  const [isMoving, setIsMoving] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeHandle, setResizeHandle] = useState<string | null>(null);
+  const [moveStartPosition, setMoveStartPosition] = useState<Point | null>(
+    null
+  );
+  const [originalBox, setOriginalBox] = useState<BoundingBoxData | null>(null);
+
   // Use a ref to track the current mouse position during drawing
   const currentMousePositionRef = useRef<Point>({ x: 0, y: 0 });
 
@@ -95,7 +104,7 @@ export default function BoundingBoxCanvas({
     currentMousePositionRef.current = position;
 
     // Only update mouse position if not drawing to reduce re-renders
-    if (!isDrawingRef.current) {
+    if (!isDrawingRef.current && !isMoving && !isResizing) {
       setMousePosition(position);
     }
 
@@ -108,43 +117,128 @@ export default function BoundingBoxCanvas({
       currentBoxRef.current = updatedBox;
       setCurrentBox(updatedBox);
     }
+
+    // Handle moving a box
+    if (
+      isMoving &&
+      selectedBoxIndex !== null &&
+      moveStartPosition &&
+      originalBox
+    ) {
+      const dx = position.x - moveStartPosition.x;
+      const dy = position.y - moveStartPosition.y;
+
+      const updatedBox = {
+        ...originalBox,
+        start: {
+          x: originalBox.start.x + dx,
+          y: originalBox.start.y + dy,
+        },
+        end: {
+          x: originalBox.end.x + dx,
+          y: originalBox.end.y + dy,
+        },
+      };
+
+      const newBoxes = [...boxes];
+      newBoxes[selectedBoxIndex] = updatedBox;
+      setBoxes(newBoxes);
+      onBoxesChange?.(newBoxes);
+    }
+
+    // Handle resizing a box
+    if (
+      isResizing &&
+      selectedBoxIndex !== null &&
+      resizeHandle &&
+      originalBox
+    ) {
+      const updatedBox = { ...originalBox };
+
+      // Update the appropriate corner based on the resize handle
+      switch (resizeHandle) {
+        case "nw":
+          updatedBox.start = { x: position.x, y: position.y };
+          break;
+        case "ne":
+          updatedBox.start = { x: originalBox.start.x, y: position.y };
+          updatedBox.end = { x: position.x, y: originalBox.end.y };
+          break;
+        case "sw":
+          updatedBox.start = { x: position.x, y: originalBox.start.y };
+          updatedBox.end = { x: originalBox.end.x, y: position.y };
+          break;
+        case "se":
+          updatedBox.end = { x: position.x, y: position.y };
+          break;
+      }
+
+      // Ensure the box has a minimum size
+      const minSize = 10;
+      const width = Math.abs(updatedBox.end.x - updatedBox.start.x);
+      const height = Math.abs(updatedBox.end.y - updatedBox.start.y);
+
+      if (width < minSize || height < minSize) {
+        return; // Don't update if the box would be too small
+      }
+
+      const newBoxes = [...boxes];
+      newBoxes[selectedBoxIndex] = updatedBox;
+      setBoxes(newBoxes);
+      onBoxesChange?.(newBoxes);
+    }
   };
 
   const handleMouseUp = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!isDrawingRef.current || !currentBoxRef.current) return;
+    if (isDrawingRef.current && currentBoxRef.current) {
+      // Only add box if it has some size
+      if (
+        Math.abs(currentBoxRef.current.end.x - currentBoxRef.current.start.x) >
+          5 &&
+        Math.abs(currentBoxRef.current.end.y - currentBoxRef.current.start.y) >
+          5
+      ) {
+        // If we have a selected class, add the box directly
+        if (selectedClass) {
+          const newBoxes = [...boxes, currentBoxRef.current];
+          setBoxes(newBoxes);
+          onBoxesChange?.(newBoxes);
+        } else {
+          // Otherwise, show the class selection menu
+          setPendingBox(currentBoxRef.current);
 
-    // Only add box if it has some size
-    if (
-      Math.abs(currentBoxRef.current.end.x - currentBoxRef.current.start.x) >
-        5 &&
-      Math.abs(currentBoxRef.current.end.y - currentBoxRef.current.start.y) > 5
-    ) {
-      // If we have a selected class, add the box directly
-      if (selectedClass) {
-        const newBoxes = [...boxes, currentBoxRef.current];
-        setBoxes(newBoxes);
-        onBoxesChange?.(newBoxes);
-      } else {
-        // Otherwise, show the class selection menu
-        setPendingBox(currentBoxRef.current);
+          // Position the menu right next to the cursor
+          setMenuPosition({
+            x: e.clientX,
+            y: e.clientY,
+          });
 
-        // Position the menu right next to the cursor
-        setMenuPosition({
-          x: e.clientX,
-          y: e.clientY,
-        });
-
-        setShowClassMenu(true);
+          setShowClassMenu(true);
+        }
       }
+
+      isDrawingRef.current = false;
+      currentBoxRef.current = null;
+      setIsDrawing(false);
+      setCurrentBox(null);
     }
 
-    isDrawingRef.current = false;
-    currentBoxRef.current = null;
-    setIsDrawing(false);
-    setCurrentBox(null);
+    // End move operation
+    if (isMoving) {
+      setIsMoving(false);
+      setMoveStartPosition(null);
+      setOriginalBox(null);
+    }
+
+    // End resize operation
+    if (isResizing) {
+      setIsResizing(false);
+      setResizeHandle(null);
+      setOriginalBox(null);
+    }
   };
 
   const handleClassSelect = (className: string) => {
@@ -216,6 +310,23 @@ export default function BoundingBoxCanvas({
     }
   };
 
+  // New handlers for move and resize operations
+  const handleMoveStart = () => {
+    if (selectedBoxIndex !== null) {
+      setIsMoving(true);
+      setMoveStartPosition(currentMousePositionRef.current);
+      setOriginalBox(boxes[selectedBoxIndex]);
+    }
+  };
+
+  const handleResizeStart = (handle: string) => {
+    if (selectedBoxIndex !== null) {
+      setIsResizing(true);
+      setResizeHandle(handle);
+      setOriginalBox(boxes[selectedBoxIndex]);
+    }
+  };
+
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Delete" && selectedBoxIndex !== null) {
       handleDeleteBox();
@@ -262,6 +373,8 @@ export default function BoundingBoxCanvas({
           isSelected={index === selectedBoxIndex}
           onHover={handleBoxHover}
           onClick={() => handleBoxClick(index)}
+          onMoveStart={handleMoveStart}
+          onResizeStart={handleResizeStart}
         />
       ))}
 
