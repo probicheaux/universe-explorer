@@ -25,13 +25,13 @@ export default function PromptInput({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-2xl">
+    <form onSubmit={handleSubmit} className="w-full">
       <div className="relative">
         <textarea
           value={prompt}
           onChange={handleChange}
           placeholder="Enter your prompt here..."
-          className="w-full h-24 px-4 py-3 bg-purple-950/30 border border-purple-800/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent text-white placeholder-purple-300/50 resize-none"
+          className="w-full h-24 px-4 py-3 bg-gray-900/50 border border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-700 focus:border-transparent text-white placeholder-gray-500 resize-none font-light"
           disabled={disabled}
         />
         <button
@@ -40,8 +40,8 @@ export default function PromptInput({
           className={`absolute bottom-3 right-3 px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200
             ${
               !prompt.trim() || disabled
-                ? "bg-purple-900/30 text-purple-400/50 cursor-not-allowed"
-                : "bg-purple-600 hover:bg-purple-500 text-white"
+                ? "bg-gray-900/50 text-gray-500 cursor-not-allowed"
+                : "bg-gray-800 hover:bg-gray-700 text-white"
             }`}
         >
           Submit

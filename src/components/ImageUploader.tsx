@@ -60,11 +60,11 @@ export default function ImageUploader({ onImageChange }: ImageUploaderProps) {
 
   return (
     <div
-      className={`w-full max-w-2xl h-80 rounded-lg border-2 border-dashed transition-all duration-300 flex flex-col items-center justify-center cursor-pointer
+      className={`w-full h-80 rounded-lg border-2 border-dashed transition-all duration-300 flex flex-col items-center justify-center cursor-pointer
         ${
           isDragging
-            ? "border-purple-500 bg-purple-900/20"
-            : "border-purple-300/30 hover:border-purple-400/50 hover:bg-purple-900/10"
+            ? "border-gray-600 bg-gray-900/50"
+            : "border-gray-800 hover:border-gray-700 hover:bg-gray-900/30"
         }`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -86,14 +86,16 @@ export default function ImageUploader({ onImageChange }: ImageUploaderProps) {
             alt="Preview"
             className="w-full h-full object-contain rounded-lg"
           />
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg opacity-0 hover:opacity-100 transition-opacity">
-            <p className="text-white text-sm">Click or drop to change image</p>
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-lg opacity-0 hover:opacity-100 transition-opacity">
+            <p className="text-white text-sm font-light">
+              Click or drop to change image
+            </p>
           </div>
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center text-center p-6">
           <svg
-            className="w-12 h-12 mb-4 text-purple-400/70"
+            className="w-12 h-12 mb-4 text-gray-500"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -106,11 +108,11 @@ export default function ImageUploader({ onImageChange }: ImageUploaderProps) {
               d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
             />
           </svg>
-          <p className="text-sm text-purple-200/80 mb-2">
+          <p className="text-sm text-gray-300 mb-2 font-light">
             Drag and drop your image here
           </p>
-          <p className="text-xs text-purple-300/60">or click to browse</p>
-          <p className="text-xs text-purple-300/60 mt-2">
+          <p className="text-xs text-gray-500 font-light">or click to browse</p>
+          <p className="text-xs text-gray-500 mt-2 font-light">
             Supports: JPEG, PNG, WebP
           </p>
         </div>
