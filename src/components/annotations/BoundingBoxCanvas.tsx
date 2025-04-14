@@ -20,6 +20,7 @@ interface BoundingBoxCanvasProps {
   availableClasses: string[];
   onClassSelect: (className: string) => void;
   classColors: Record<string, string>;
+  className?: string;
 }
 
 export default function BoundingBoxCanvas({
@@ -28,6 +29,7 @@ export default function BoundingBoxCanvas({
   availableClasses,
   onClassSelect,
   classColors,
+  className = "",
 }: BoundingBoxCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -474,7 +476,7 @@ export default function BoundingBoxCanvas({
       ref={canvasRef}
       className={`absolute inset-0 z-10 ${
         isDrawing ? "cursor-crosshair" : "cursor-default"
-      }`}
+      } ${className}`}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -622,11 +624,8 @@ export default function BoundingBoxCanvas({
             {availableClasses.map((cls) => (
               <button
                 key={cls}
-                className="text-left px-3 py-1.5 rounded-md text-sm hover:bg-gray-800 transition-colors cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleChangeClass(cls);
-                }}
+                className="text-left px-3 py-1.5 rounded-md text-xs text-gray-200 hover:bg-gray-800 transition-colors"
+                onClick={() => handleChangeClass(cls)}
                 style={{
                   color: classColors[cls],
                 }}

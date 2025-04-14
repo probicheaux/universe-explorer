@@ -125,17 +125,19 @@ export default function UniverseExplorer() {
               <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
             )}
 
-            {/* Canvas - switches between BoundingBox and Results */}
-            {image && prompt && activeTab === "find" && (
+            {/* Canvas - Always render BoundingBoxCanvas but control visibility */}
+            {image && prompt && (
               <BoundingBoxCanvas
                 selectedClass={selectedClass}
                 availableClasses={classes}
                 onClassSelect={handleClassSelect}
                 classColors={classColors}
                 onBoxesChange={handleBoxesChange}
+                className={activeTab === "find" ? "block" : "hidden z-0"}
               />
             )}
 
+            {/* Results Canvas */}
             {image && prompt && activeTab === "results" && (
               <ResultsCanvas results={inferenceResults} />
             )}
