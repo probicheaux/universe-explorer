@@ -96,8 +96,6 @@ export const searchDatasets = async ({
 };
 
 export const searchTopObjectDetectionTrainedDatasets = async () => {
-  const client = getClient();
-
   const query = {
     bool: {
       must: [
@@ -135,30 +133,10 @@ export const searchTopObjectDetectionTrainedDatasets = async () => {
     },
   };
 
-  const sort = [
-    {
-      "universe.stars": {
-        order: "desc",
-        missing: "_last",
-        nested: {
-          path: "universe",
-        },
-      },
-    },
-    {
-      bestModelScore: {
-        order: "desc",
-        missing: "_last",
-      },
-    },
-    {
-      images: "desc",
-    },
-  ];
-
-  const searchPayload = {
+  return searchDatasets({
     query,
-  } as SearchDatasetsPayload;
-
-  return searchDatasets(searchPayload);
+    size: 10000,
+    fields: FIELDS_TO_FETCH,
+    sort: DEFAULT_SORT,
+  });
 };
