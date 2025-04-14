@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo, memo } from "react";
 import BoundingBox from "./BoundingBox";
 import DrawingGuides from "./DrawingGuides";
 
@@ -22,6 +22,12 @@ interface BoundingBoxCanvasProps {
   classColors?: Record<string, string>;
 }
 
+// Memoized DrawingGuides component to prevent unnecessary re-renders
+const MemoizedDrawingGuides = memo(DrawingGuides);
+
+// Memoized BoundingBox component to prevent unnecessary re-renders
+const MemoizedBoundingBox = memo(BoundingBox);
+
 export default function BoundingBoxCanvas({
   selectedClass,
   onBoxesChange,
@@ -40,6 +46,7 @@ export default function BoundingBoxCanvas({
   const [selectedBoxIndex, setSelectedBoxIndex] = useState<number | null>(null);
   const [isHoveringBox, setIsHoveringBox] = useState(false);
 
+  // Memoize the getRelativeCoordinates function
   const getRelativeCoordinates = useCallback((e: React.MouseEvent): Point => {
     if (!canvasRef.current) return { x: 0, y: 0 };
     const rect = canvasRef.current.getBoundingClientRect();
@@ -49,6 +56,7 @@ export default function BoundingBoxCanvas({
     };
   }, []);
 
+  // Optimize mouseDown handler
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -82,21 +90,30 @@ export default function BoundingBoxCanvas({
     ]
   );
 
+  // Optimize mouseMove handler - use requestAnimationFrame for smoother updates
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
 
       const position = getRelativeCoordinates(e);
-      setMousePosition(position);
+
+      // Only update mouse position if not drawing to reduce re-renders
+      if (!isDrawing) {
+        setMousePosition(position);
+      }
 
       if (isDrawing && currentBox) {
-        setCurrentBox({ ...currentBox, end: position });
+        // Use requestAnimationFrame for smoother updates
+        requestAnimationFrame(() => {
+          setCurrentBox({ ...currentBox, end: position });
+        });
       }
     },
     [isDrawing, currentBox, getRelativeCoordinates]
   );
 
+  // Optimize mouseUp handler
   const handleMouseUp = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -134,6 +151,7 @@ export default function BoundingBoxCanvas({
     [isDrawing, currentBox, selectedClass, boxes, onBoxesChange]
   );
 
+  // Optimize class selection handler
   const handleClassSelect = useCallback(
     (className: string) => {
       if (pendingBox && onClassSelect) {
@@ -157,15 +175,18 @@ export default function BoundingBoxCanvas({
     [pendingBox, onClassSelect, classColors, boxes, onBoxesChange]
   );
 
+  // Optimize menu close handler
   const handleCloseMenu = useCallback(() => {
     setShowClassMenu(false);
     setPendingBox(null);
   }, []);
 
+  // Optimize box hover handler
   const handleBoxHover = useCallback((isHovering: boolean) => {
     setIsHoveringBox(isHovering);
   }, []);
 
+  // Optimize box click handler
   const handleBoxClick = useCallback(
     (index: number) => {
       setSelectedBoxIndex(index);
@@ -186,6 +207,7 @@ export default function BoundingBoxCanvas({
     [boxes]
   );
 
+  // Optimize delete box handler
   const handleDeleteBox = useCallback(() => {
     if (selectedBoxIndex !== null) {
       const newBoxes = boxes.filter((_, i) => i !== selectedBoxIndex);
@@ -195,6 +217,7 @@ export default function BoundingBoxCanvas({
     }
   }, [selectedBoxIndex, boxes, onBoxesChange]);
 
+  // Optimize change class handler
   const handleChangeClass = useCallback(
     (className: string) => {
       if (selectedBoxIndex !== null) {
@@ -212,6 +235,7 @@ export default function BoundingBoxCanvas({
     [selectedBoxIndex, boxes, onBoxesChange, classColors]
   );
 
+  // Optimize key down handler
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Delete" && selectedBoxIndex !== null) {
@@ -227,10 +251,55 @@ export default function BoundingBoxCanvas({
     [selectedBoxIndex, showClassMenu, handleDeleteBox, handleCloseMenu]
   );
 
+  // Add keyboard event listener
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+  // Memoize the boxes rendering to prevent unnecessary re-renders
+  const renderedBoxes = useMemo(() => {
+    return boxes.map((box, index) => (
+      <MemoizedBoundingBox
+        key={index}
+        start={box.start}
+        end={box.end}
+        label={box.label}
+        color={box.color}
+        isSelected={index === selectedBoxIndex}
+        onHover={handleBoxHover}
+        onClick={() => handleBoxClick(index)}
+      />
+    ));
+  }, [boxes, selectedBoxIndex, handleBoxHover, handleBoxClick]);
+
+  // Memoize the current box rendering
+  const renderedCurrentBox = useMemo(() => {
+    if (!currentBox) return null;
+
+    return (
+      <MemoizedBoundingBox
+        start={currentBox.start}
+        end={currentBox.end}
+        label={currentBox.label}
+        color={currentBox.color}
+      />
+    );
+  }, [currentBox]);
+
+  // Memoize the pending box rendering
+  const renderedPendingBox = useMemo(() => {
+    if (!pendingBox || currentBox) return null;
+
+    return (
+      <MemoizedBoundingBox
+        start={pendingBox.start}
+        end={pendingBox.end}
+        label={pendingBox.label}
+        color={pendingBox.color}
+      />
+    );
+  }, [pendingBox, currentBox]);
 
   return (
     <div
@@ -243,7 +312,7 @@ export default function BoundingBoxCanvas({
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
-      <DrawingGuides
+      <MemoizedDrawingGuides
         mousePosition={mousePosition}
         selectedClass={selectedClass}
         color={selectedClass ? classColors[selectedClass] : undefined}
@@ -251,38 +320,13 @@ export default function BoundingBoxCanvas({
       />
 
       {/* Existing Boxes */}
-      {boxes.map((box, index) => (
-        <BoundingBox
-          key={index}
-          start={box.start}
-          end={box.end}
-          label={box.label}
-          color={box.color}
-          isSelected={index === selectedBoxIndex}
-          onHover={handleBoxHover}
-          onClick={() => handleBoxClick(index)}
-        />
-      ))}
+      {renderedBoxes}
 
       {/* Current Box Being Drawn */}
-      {currentBox && (
-        <BoundingBox
-          start={currentBox.start}
-          end={currentBox.end}
-          label={currentBox.label}
-          color={currentBox.color}
-        />
-      )}
+      {renderedCurrentBox}
 
       {/* Pending Box (when no class is selected) */}
-      {pendingBox && !currentBox && (
-        <BoundingBox
-          start={pendingBox.start}
-          end={pendingBox.end}
-          label={pendingBox.label}
-          color={pendingBox.color}
-        />
-      )}
+      {renderedPendingBox}
 
       {/* Class Selection Menu */}
       {showClassMenu && (
@@ -291,7 +335,7 @@ export default function BoundingBoxCanvas({
           style={{
             left: menuPosition.x,
             top: menuPosition.y,
-            transform: "none", // Remove the transform that was positioning relative to cursor
+            transform: "translate(10px, 10px)", // Position right next to the cursor
           }}
         >
           <div className="flex justify-between items-center mb-2 px-2">
@@ -341,7 +385,7 @@ export default function BoundingBoxCanvas({
           </div>
           <div className="flex flex-col gap-1">
             <button
-              className="text-left px-3 py-1.5 rounded-md text-sm text-red-400 hover:bg-gray-800 transition-colors"
+              className="text-left px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-gray-800 transition-colors"
               onClick={handleDeleteBox}
             >
               Delete Box
