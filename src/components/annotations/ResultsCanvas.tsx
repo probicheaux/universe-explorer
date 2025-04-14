@@ -9,26 +9,6 @@ interface ResultsCanvasProps {
 export default function ResultsCanvas({ results = [] }: ResultsCanvasProps) {
   // For now, we'll use hardcoded boxes for demonstration
   console.log("results on canvas", results);
-  const hardcodedBoxes: InferImageResponse["predictions"] = [
-    {
-      class: "person",
-      x: 100,
-      y: 100,
-      width: 200,
-      height: 300,
-      confidence: 0.95,
-    },
-    { class: "car", x: 400, y: 200, width: 300, height: 150, confidence: 0.87 },
-    {
-      class: "truck",
-      x: 700,
-      y: 300,
-      width: 250,
-      height: 180,
-      confidence: 0.92,
-    },
-  ];
-
   const boxesToDisplay = results?.[0]?.predictions ?? [];
 
   return (
