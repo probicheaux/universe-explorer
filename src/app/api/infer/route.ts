@@ -3,11 +3,11 @@ import { searchTopObjectDetectionTrainedDatasets } from "@/adapters/elasticAdapt
 import { getAndCache } from "@/utils/cache";
 
 export async function POST() {
-  const response = await getAndCache(
+  await getAndCache(
     "object-detection-datasets",
     searchTopObjectDetectionTrainedDatasets
   );
 
   // Return a safe response without exposing sensitive data
-  return NextResponse.json(response);
+  return NextResponse.json({ success: true });
 }
