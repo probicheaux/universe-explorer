@@ -1,16 +1,16 @@
 import { useState } from "react";
 
-interface ImageToolbarProps {
+interface AnnotationToolbarProps {
   taskType?: string;
   classes?: string[];
   onClassesChange?: (classes: string[]) => void;
 }
 
-export default function ImageToolbar({
+export default function AnnotationToolbar({
   taskType = "Object Detection",
   classes = ["person", "car", "truck"],
   onClassesChange,
-}: ImageToolbarProps) {
+}: AnnotationToolbarProps) {
   const [newClass, setNewClass] = useState("");
   const [isAddingClass, setIsAddingClass] = useState(false);
 

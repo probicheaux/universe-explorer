@@ -3,7 +3,7 @@
 import { useState } from "react";
 import ImageArea from "./ImageArea";
 import PromptArea from "./PromptArea";
-import ImageToolbar from "./ImageToolbar";
+import AnnotationToolbar from "./AnnotationToolbar";
 
 interface ExplorerData {
   image?: string;
@@ -26,7 +26,7 @@ export default function UniverseExplorer() {
           } overflow-hidden`}
         >
           {showToolbar && (
-            <ImageToolbar classes={classes} onClassesChange={setClasses} />
+            <AnnotationToolbar classes={classes} onClassesChange={setClasses} />
           )}
         </div>
 
