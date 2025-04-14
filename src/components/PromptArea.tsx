@@ -12,6 +12,7 @@ export default function PromptArea({
 }: PromptAreaProps) {
   const [isEditing, setIsEditing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -28,6 +29,13 @@ export default function PromptArea({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
+  }, [isEditing]);
+
+  // Focus input when switching to edit mode
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+    }
   }, [isEditing]);
 
   return (
@@ -73,6 +81,7 @@ export default function PromptArea({
           }`}
         >
           <PromptInput
+            ref={inputRef}
             onSubmit={(prompt) => {
               onPromptChange(prompt);
             }}
