@@ -41,18 +41,14 @@ export default function FindModelButton({
             <span>Finding Model...</span>
           </>
         ) : (
-          <div className="flex items-center gap-2 cursor-pointer">
+          <div className="flex items-center gap-3 cursor-pointer">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              viewBox="0 0 20 20"
+              className="h-4 w-4"
+              viewBox="0 0 512 512"
               fill="currentColor"
             >
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"
-                clipRule="evenodd"
-              />
+              <path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z" />
             </svg>
             <span>Find Model</span>
           </div>
