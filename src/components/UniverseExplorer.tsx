@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import ImageArea from "./ImageArea";
 import PromptArea from "./PromptArea";
 import AnnotationToolbar from "./AnnotationToolbar";
@@ -21,6 +21,13 @@ export default function UniverseExplorer() {
       return acc;
     }, {} as Record<string, string>);
   }, [classes]);
+
+  // Reset selected class if it's removed from classes
+  useEffect(() => {
+    if (selectedClass && !classes.includes(selectedClass)) {
+      setSelectedClass("");
+    }
+  }, [classes, selectedClass]);
 
   const handleImageChange = (imageData: string) => {
     setImage(imageData);

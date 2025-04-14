@@ -69,6 +69,29 @@ export default function BoundingBoxCanvas({
     setHistoryIndex(0);
   }, []);
 
+  // Update box colors when classColors change
+  useEffect(() => {
+    if (boxes.length > 0) {
+      const updatedBoxes = boxes.map((box) => {
+        // Only update color if the class exists in classColors
+        if (classColors[box.label]) {
+          return {
+            ...box,
+            color: classColors[box.label],
+          };
+        }
+        return box;
+      });
+
+      // Only update if there are actual changes
+      if (JSON.stringify(updatedBoxes) !== JSON.stringify(boxes)) {
+        setBoxes(updatedBoxes);
+        onBoxesChange?.(updatedBoxes);
+        addToHistory(updatedBoxes);
+      }
+    }
+  }, [classColors]);
+
   // Function to add a new state to history
   const addToHistory = (newBoxes: BoundingBoxData[]) => {
     // Remove any future states if we're not at the end of history
