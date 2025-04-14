@@ -1,20 +1,24 @@
 import { useRef } from "react";
+import BoundingBoxCanvas from "./annotations/BoundingBoxCanvas";
 
 interface ImageAreaProps {
   image?: string;
   onImageChange: (image: string) => void;
   isAnnotationMode?: boolean;
+  selectedClass?: string;
+  onBoxesChange?: (boxes: any[]) => void;
 }
 
 export default function ImageArea({
   image,
   onImageChange,
   isAnnotationMode = false,
+  selectedClass = "",
+  onBoxesChange,
 }: ImageAreaProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageClick = () => {
-    // Only trigger file upload if not in annotation mode
     if (!isAnnotationMode && fileInputRef.current) {
       fileInputRef.current.click();
     }
@@ -33,7 +37,7 @@ export default function ImageArea({
   };
 
   const handleChangeImageClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent triggering the image click handler
+    e.stopPropagation();
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
@@ -55,13 +59,21 @@ export default function ImageArea({
       />
       {image ? (
         <>
-          <img
-            src={image}
-            alt="Uploaded"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          <div className="absolute inset-0">
+            <img
+              src={image}
+              alt="Uploaded"
+              className="w-full h-full object-cover"
+            />
+            {isAnnotationMode && (
+              <BoundingBoxCanvas
+                selectedClass={selectedClass}
+                onBoxesChange={onBoxesChange}
+              />
+            )}
+          </div>
 
-          {/* Change Image Button - Only show in annotation mode */}
+          {/* Change Image Button */}
           {isAnnotationMode && (
             <div className="absolute top-4 right-4 z-10">
               <button
@@ -85,7 +97,7 @@ export default function ImageArea({
             </div>
           )}
 
-          {/* Hover Overlay - Only show when not in annotation mode */}
+          {/* Hover Overlay */}
           {!isAnnotationMode && (
             <div className="absolute inset-0 bg-gray-950/0 group-hover:bg-gray-950/40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
               <div className="bg-gray-900/80 px-4 py-2 rounded-lg text-gray-300 text-sm transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">

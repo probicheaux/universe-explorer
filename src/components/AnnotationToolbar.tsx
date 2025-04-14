@@ -4,12 +4,16 @@ interface AnnotationToolbarProps {
   taskType?: string;
   classes?: string[];
   onClassesChange?: (classes: string[]) => void;
+  selectedClass?: string;
+  onClassSelect?: (className: string) => void;
 }
 
 export default function AnnotationToolbar({
   taskType = "Object Detection",
   classes = ["person", "car", "truck"],
   onClassesChange,
+  selectedClass = "",
+  onClassSelect,
 }: AnnotationToolbarProps) {
   const [newClass, setNewClass] = useState("");
   const [isAddingClass, setIsAddingClass] = useState(false);
@@ -25,11 +29,20 @@ export default function AnnotationToolbar({
   const handleRemoveClass = (classToRemove: string) => {
     if (onClassesChange) {
       onClassesChange(classes.filter((c) => c !== classToRemove));
+      if (selectedClass === classToRemove && onClassSelect) {
+        onClassSelect("");
+      }
+    }
+  };
+
+  const handleClassClick = (className: string) => {
+    if (onClassSelect) {
+      onClassSelect(className === selectedClass ? "" : className);
     }
   };
 
   return (
-    <div className="w-64 h-full bg-gray-900/80 backdrop-blur-md rounded-l-lg p-4 border border-gray-800 shadow-lg h-full">
+    <div className="w-64 h-full bg-gray-900/80 backdrop-blur-md rounded-l-lg p-4 border border-gray-800 shadow-lg">
       {/* Task Type */}
       <div className="mb-4">
         <h3 className="text-sm font-medium text-gray-400 mb-1">Task Type</h3>
@@ -53,12 +66,24 @@ export default function AnnotationToolbar({
           {classes.map((cls) => (
             <div
               key={cls}
-              className="group flex items-center bg-gray-800/50 px-2 py-1 rounded-md text-gray-200 text-xs"
+              className={`group flex items-center px-2 py-1 rounded-md text-xs cursor-pointer transition-all ${
+                cls === selectedClass
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-800/50 text-gray-200 hover:bg-gray-700/50"
+              }`}
+              onClick={() => handleClassClick(cls)}
             >
               <span>{cls}</span>
               <button
-                onClick={() => handleRemoveClass(cls)}
-                className="ml-1.5 text-gray-500 hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveClass(cls);
+                }}
+                className={`ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity ${
+                  cls === selectedClass
+                    ? "text-white"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
               >
                 ×
               </button>
@@ -100,14 +125,14 @@ export default function AnnotationToolbar({
             Draw bounding boxes around objects you want to detect:
           </p>
           <ol className="list-decimal list-inside space-y-1 text-gray-400">
-            <li>Click and drag to create a box</li>
             <li>Select a class from the list above</li>
+            <li>Click and drag to create a box</li>
             <li>
               Press{" "}
               <kbd className="px-1.5 py-0.5 bg-gray-900 rounded border border-gray-700">
                 Delete
               </kbd>{" "}
-              to remove a box
+              to remove the last box
             </li>
           </ol>
         </div>

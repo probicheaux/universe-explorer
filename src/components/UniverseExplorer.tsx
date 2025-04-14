@@ -10,9 +10,17 @@ interface ExplorerData {
   prompt?: string;
 }
 
+interface BoundingBox {
+  start: { x: number; y: number };
+  end: { x: number; y: number };
+  label: string;
+}
+
 export default function UniverseExplorer() {
   const [data, setData] = useState<ExplorerData>({});
   const [classes, setClasses] = useState<string[]>(["person", "car", "truck"]);
+  const [selectedClass, setSelectedClass] = useState<string>("");
+  const [boxes, setBoxes] = useState<BoundingBox[]>([]);
 
   const showToolbar = data.image && data.prompt;
 
@@ -31,6 +39,8 @@ export default function UniverseExplorer() {
               <AnnotationToolbar
                 classes={classes}
                 onClassesChange={setClasses}
+                selectedClass={selectedClass}
+                onClassSelect={setSelectedClass}
               />
             </div>
           )}
@@ -42,6 +52,8 @@ export default function UniverseExplorer() {
             image={data.image}
             onImageChange={(image) => setData((prev) => ({ ...prev, image }))}
             isAnnotationMode={showToolbar}
+            selectedClass={selectedClass}
+            onBoxesChange={setBoxes}
           />
           <PromptArea
             prompt={data.prompt}
