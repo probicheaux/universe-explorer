@@ -31,7 +31,11 @@ export default function PromptArea({
   }, [isEditing]);
 
   return (
-    <div className="p-6 bg-gray-900/80 border-t border-gray-800">
+    <div
+      className={`p-6 border-t border-gray-800 transition-all duration-300 ${
+        isEditing ? "bg-gray-900/80" : "bg-gray-900/20 backdrop-blur-md"
+      }`}
+    >
       <div
         ref={containerRef}
         className={`relative transition-all duration-300 ${
@@ -47,15 +51,16 @@ export default function PromptArea({
           }`}
           onClick={() => setIsEditing(true)}
         >
-          <h3 className="text-lg font-medium text-gray-200 mb-2">
-            Your Prompt
+          <h3 className="text-lg font-semibold text-gray-200 mb-2">
+            What do you want to understand about your image?
           </h3>
           <div
             className={`${
               prompt ? "text-gray-300" : "text-gray-500"
-            } transition-colors duration-300`}
+            } transition-colors duration-300 text-sm`}
           >
-            {prompt || "Click to enter your prompt"}
+            {prompt ||
+              "Example: I want to identify people and cars in street footage from my security camera"}
           </div>
         </div>
 
