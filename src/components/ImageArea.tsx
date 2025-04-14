@@ -1,12 +1,18 @@
 import { useRef } from "react";
 import BoundingBoxCanvas from "./annotations/BoundingBoxCanvas";
 
+interface BoundingBox {
+  start: { x: number; y: number };
+  end: { x: number; y: number };
+  label: string;
+}
+
 interface ImageAreaProps {
   image?: string;
   onImageChange: (image: string) => void;
   isAnnotationMode?: boolean;
   selectedClass?: string;
-  onBoxesChange?: (boxes: any[]) => void;
+  onBoxesChange?: (boxes: BoundingBox[]) => void;
 }
 
 export default function ImageArea({
@@ -66,10 +72,12 @@ export default function ImageArea({
               className="w-full h-full object-cover"
             />
             {isAnnotationMode && (
-              <BoundingBoxCanvas
-                selectedClass={selectedClass}
-                onBoxesChange={onBoxesChange}
-              />
+              <div className="absolute inset-0">
+                <BoundingBoxCanvas
+                  selectedClass={selectedClass}
+                  onBoxesChange={onBoxesChange}
+                />
+              </div>
             )}
           </div>
 
