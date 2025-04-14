@@ -126,7 +126,13 @@ export default function AnnotationToolbar({
               type="text"
               value={newClass}
               onChange={handleNewClassChange}
-              onKeyDown={(e) => e.key === "Enter" && handleAddClass()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleAddClass();
+                } else if (e.key === "Escape") {
+                  handleCancel();
+                }
+              }}
               placeholder="New class name"
               className="w-full bg-gray-900/50 border border-gray-700 rounded-md px-2 py-1.5 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-600"
               autoFocus
