@@ -33,6 +33,7 @@ export default function UniverseExplorer() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6">
+      <h1 className="text-4xl font-semibold mb-4">Universe Explorer</h1>
       <div className="w-full h-[600px] bg-gray-900/50 rounded-lg overflow-hidden flex flex-col">
         {/* Image Area */}
         <div
