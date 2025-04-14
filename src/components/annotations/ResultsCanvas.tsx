@@ -8,6 +8,7 @@ interface ResultsCanvasProps {
 
 export default function ResultsCanvas({ results = [] }: ResultsCanvasProps) {
   // For now, we'll use hardcoded boxes for demonstration
+  console.log("results on canvas", results);
   const hardcodedBoxes: InferImageResponse["predictions"] = [
     {
       class: "person",
