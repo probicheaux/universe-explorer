@@ -19,23 +19,25 @@ export default function UniverseExplorer() {
   return (
     <div className="w-full h-full flex-1 mx-auto p-6">
       <div className="w-full h-[600px] bg-gray-900/50 rounded-lg overflow-hidden flex">
-        {/* Toolbar - Only show when both image and prompt are present */}
+        {/* Toolbar container - fixed width, always present but with zero width when hidden */}
         <div
-          className={`transition-all duration-300 ease-in-out ${
-            showToolbar ? "w-64 opacity-100" : "w-0 opacity-0"
+          className={`transition-all duration-500 ease-in-out ${
+            showToolbar ? "w-64" : "w-0"
           } overflow-hidden`}
         >
+          {/* Toolbar - Only render when visible to prevent layout issues */}
           {showToolbar && (
-            <AnnotationToolbar classes={classes} onClassesChange={setClasses} />
+            <div className="w-64">
+              <AnnotationToolbar
+                classes={classes}
+                onClassesChange={setClasses}
+              />
+            </div>
           )}
         </div>
 
-        {/* Main content area */}
-        <div
-          className={`flex flex-col transition-all duration-300 ease-in-out ${
-            showToolbar ? "flex-1" : "w-full"
-          }`}
-        >
+        {/* Main content area - always present with full width */}
+        <div className="flex flex-col flex-1">
           <ImageArea
             image={data.image}
             onImageChange={(image) => setData((prev) => ({ ...prev, image }))}
