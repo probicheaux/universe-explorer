@@ -19,13 +19,32 @@ export default function AnnotationToolbar({
 }: AnnotationToolbarProps) {
   const [newClass, setNewClass] = useState("");
   const [isAddingClass, setIsAddingClass] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleAddClass = () => {
-    if (newClass.trim() && onClassesChange) {
-      onClassesChange([...classes, newClass.trim()]);
+    const trimmedClass = newClass.trim();
+    if (trimmedClass && onClassesChange) {
+      // Check for duplicates (case-insensitive)
+      if (classes.some((c) => c.toLowerCase() === trimmedClass.toLowerCase())) {
+        setError("This class already exists");
+        return;
+      }
+      setError(null);
+      onClassesChange([...classes, trimmedClass]);
       setNewClass("");
       setIsAddingClass(false);
     }
+  };
+
+  const handleNewClassChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewClass(e.target.value);
+    setError(null); // Clear error when user types
+  };
+
+  const handleCancel = () => {
+    setNewClass("");
+    setError(null);
+    setIsAddingClass(false);
   };
 
   const handleRemoveClass = (classToRemove: string) => {
@@ -102,28 +121,33 @@ export default function AnnotationToolbar({
           })}
         </div>
         {isAddingClass && (
-          <div className="flex items-center gap-2">
+          <div className="p-3 bg-gray-800/50 rounded-md border border-gray-700">
             <input
               type="text"
               value={newClass}
-              onChange={(e) => setNewClass(e.target.value)}
+              onChange={handleNewClassChange}
               onKeyDown={(e) => e.key === "Enter" && handleAddClass()}
               placeholder="New class name"
-              className="flex-1 bg-gray-800/50 border border-gray-700 rounded-md px-2 py-1 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-600"
+              className="w-full bg-gray-900/50 border border-gray-700 rounded-md px-2 py-1.5 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-600"
               autoFocus
             />
-            <button
-              onClick={handleAddClass}
-              className="bg-gray-700 hover:bg-gray-600 text-gray-200 px-2 py-1 rounded-md text-xs transition-colors"
-            >
-              Add
-            </button>
-            <button
-              onClick={() => setIsAddingClass(false)}
-              className="text-gray-500 hover:text-gray-400 text-xs transition-colors"
-            >
-              Cancel
-            </button>
+            {error && (
+              <div className="mt-1.5 text-xs text-red-400">{error}</div>
+            )}
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                onClick={handleCancel}
+                className="text-gray-500 hover:text-gray-400 text-xs transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddClass}
+                className="bg-gray-700 hover:bg-gray-600 text-gray-200 px-2 py-1 rounded-md text-xs transition-colors"
+              >
+                Add
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -135,17 +159,25 @@ export default function AnnotationToolbar({
           <p className="mb-2">
             Draw bounding boxes around objects you want to detect:
           </p>
-          <ol className="list-decimal list-inside space-y-1 text-gray-400">
+          <ol className="list-decimal list-inside space-y-1.5 text-gray-400">
             <li>
               Select a class from the list above (or draw first, then select)
             </li>
             <li>Click and drag to create a box</li>
             <li>
+              Use the three dots menu to:
+              <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
+                <li>Delete a box</li>
+                <li>Change its class</li>
+                <li>Move or resize it</li>
+              </ul>
+            </li>
+            <li>
               Press{" "}
               <kbd className="px-1.5 py-0.5 bg-gray-900 rounded border border-gray-700">
-                Delete
+                ⌘Z
               </kbd>{" "}
-              to remove the last box
+              to undo your last action
             </li>
           </ol>
         </div>
