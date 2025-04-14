@@ -24,8 +24,14 @@ export default function ImageArea({
 }: ImageAreaProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageClick = () => {
-    if (!isAnnotationMode && fileInputRef.current) {
+  const handleImageClick = (e: React.MouseEvent) => {
+    // Only handle click if not in annotation mode
+    if (isAnnotationMode) {
+      e.stopPropagation();
+      return;
+    }
+
+    if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };

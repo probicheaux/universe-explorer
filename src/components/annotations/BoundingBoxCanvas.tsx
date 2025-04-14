@@ -38,22 +38,41 @@ export default function BoundingBoxCanvas({
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!selectedClass) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    console.log("Mouse down", { selectedClass, isDrawing });
+
+    if (!selectedClass) {
+      console.log("No class selected");
+      return;
+    }
+
     setIsDrawing(true);
     const start = getRelativeCoordinates(e);
+    console.log("Starting box at", start);
     setCurrentBox({ start, end: start, label: selectedClass });
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     const position = getRelativeCoordinates(e);
     setMousePosition(position);
 
     if (isDrawing && currentBox) {
+      console.log("Updating box", { start: currentBox.start, end: position });
       setCurrentBox({ ...currentBox, end: position });
     }
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    console.log("Mouse up", { isDrawing, currentBox });
+
     if (!isDrawing || !currentBox) return;
 
     // Only add box if it has some size
@@ -61,9 +80,12 @@ export default function BoundingBoxCanvas({
       Math.abs(currentBox.end.x - currentBox.start.x) > 5 &&
       Math.abs(currentBox.end.y - currentBox.start.y) > 5
     ) {
+      console.log("Adding box", currentBox);
       const newBoxes = [...boxes, currentBox];
       setBoxes(newBoxes);
       onBoxesChange?.(newBoxes);
+    } else {
+      console.log("Box too small, discarding");
     }
 
     setIsDrawing(false);
@@ -86,7 +108,9 @@ export default function BoundingBoxCanvas({
   return (
     <div
       ref={canvasRef}
-      className="absolute inset-0 z-50 cursor-crosshair"
+      className={`absolute inset-0 z-10 ${
+        isDrawing ? "cursor-crosshair" : "cursor-default"
+      }`}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
