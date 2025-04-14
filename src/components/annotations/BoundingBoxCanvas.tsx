@@ -193,7 +193,7 @@ export default function BoundingBoxCanvas({
       {/* Class Selection Menu */}
       {showClassMenu && (
         <div
-          className="absolute z-20 bg-gray-900/90 backdrop-blur-md rounded-lg shadow-lg p-2 min-w-[150px]"
+          className="fixed z-20 bg-gray-900/90 backdrop-blur-md rounded-lg shadow-lg p-2 min-w-[150px]"
           style={{
             left: menuPosition.x,
             top: menuPosition.y,
