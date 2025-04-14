@@ -166,9 +166,25 @@ export default function BoundingBoxCanvas({
     setIsHoveringBox(isHovering);
   }, []);
 
-  const handleBoxClick = useCallback((index: number) => {
-    setSelectedBoxIndex(index);
-  }, []);
+  const handleBoxClick = useCallback(
+    (index: number) => {
+      setSelectedBoxIndex(index);
+      // Get the box position for menu placement
+      if (canvasRef.current && boxes[index]) {
+        const box = boxes[index];
+        const left = Math.min(box.start.x, box.end.x);
+        const top = Math.min(box.start.y, box.end.y);
+        const width = Math.abs(box.end.x - box.start.x);
+
+        // Position menu to the right of the box
+        setMenuPosition({
+          x: left + width + 10,
+          y: top,
+        });
+      }
+    },
+    [boxes]
+  );
 
   const handleDeleteBox = useCallback(() => {
     if (selectedBoxIndex !== null) {
@@ -275,7 +291,7 @@ export default function BoundingBoxCanvas({
           style={{
             left: menuPosition.x,
             top: menuPosition.y,
-            transform: "translate(10px, 10px)", // Position right next to the cursor
+            transform: "none", // Remove the transform that was positioning relative to cursor
           }}
         >
           <div className="flex justify-between items-center mb-2 px-2">
@@ -309,8 +325,9 @@ export default function BoundingBoxCanvas({
         <div
           className="fixed z-20 bg-gray-900/90 backdrop-blur-md rounded-lg shadow-lg p-2 min-w-[150px]"
           style={{
-            left: mousePosition.x + 10,
-            top: mousePosition.y + 10,
+            left: menuPosition.x,
+            top: menuPosition.y,
+            transform: "none", // Remove the transform that was positioning relative to cursor
           }}
         >
           <div className="flex justify-between items-center mb-2 px-2">

@@ -39,9 +39,9 @@ export default function BoundingBox({
 
   return (
     <div
-      className={`absolute group ${isSelected ? "z-20" : "z-10"} ${
-        isSelected ? "cursor-pointer" : "cursor-default"
-      }`}
+      className={`absolute group ${
+        isSelected ? "z-20" : "z-10"
+      } cursor-pointer`}
       style={{
         left,
         top,
@@ -49,7 +49,7 @@ export default function BoundingBox({
         height,
         border: `2px solid ${color}`,
         backgroundColor: isSelected ? `${color}33` : "transparent",
-        transition: "background-color 0.2s ease-in-out",
+        transition: "all 0.2s ease-in-out",
       }}
       onMouseEnter={() => onHover?.(true)}
       onMouseLeave={() => onHover?.(false)}
@@ -73,7 +73,17 @@ export default function BoundingBox({
 
       {/* Hover Indicator */}
       {!isSelected && (
-        <div className="absolute inset-0 border-2 border-dashed border-white/30 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
+        <div className="absolute inset-0 border-2 border-dashed border-white/50 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
+      )}
+
+      {/* Hover Background */}
+      {!isSelected && (
+        <div
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+          style={{
+            backgroundColor: `${color}22`,
+          }}
+        />
       )}
     </div>
   );
