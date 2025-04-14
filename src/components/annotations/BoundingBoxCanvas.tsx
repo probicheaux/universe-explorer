@@ -50,6 +50,10 @@ export default function BoundingBoxCanvas({
   );
   const [originalBox, setOriginalBox] = useState<BoundingBoxData | null>(null);
 
+  // Undo history state
+  const [history, setHistory] = useState<BoundingBoxData[][]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+
   // Use a ref to track the current mouse position during drawing
   const currentMousePositionRef = useRef<Point>({ x: 0, y: 0 });
 
@@ -58,6 +62,33 @@ export default function BoundingBoxCanvas({
 
   // Use a ref to track the current box being drawn
   const currentBoxRef = useRef<BoundingBoxData | null>(null);
+
+  // Initialize history with empty boxes array
+  useEffect(() => {
+    setHistory([[]]);
+    setHistoryIndex(0);
+  }, []);
+
+  // Function to add a new state to history
+  const addToHistory = (newBoxes: BoundingBoxData[]) => {
+    // Remove any future states if we're not at the end of history
+    const newHistory = history.slice(0, historyIndex + 1);
+    // Add the new state
+    newHistory.push([...newBoxes]);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  };
+
+  // Function to undo the last action
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      const previousBoxes = history[newIndex];
+      setBoxes(previousBoxes);
+      onBoxesChange?.(previousBoxes);
+    }
+  };
 
   const getRelativeCoordinates = (e: React.MouseEvent): Point => {
     if (!canvasRef.current) return { x: 0, y: 0 };
@@ -222,6 +253,8 @@ export default function BoundingBoxCanvas({
           const newBoxes = [...boxes, currentBoxRef.current];
           setBoxes(newBoxes);
           onBoxesChange?.(newBoxes);
+          // Add to history
+          addToHistory(newBoxes);
         } else {
           // Otherwise, show the class selection menu
           setPendingBox(currentBoxRef.current);
@@ -247,6 +280,8 @@ export default function BoundingBoxCanvas({
       setIsMoving(false);
       setMoveStartPosition(null);
       setOriginalBox(null);
+      // Add to history after move is complete
+      addToHistory(boxes);
     }
 
     // End resize operation
@@ -254,6 +289,8 @@ export default function BoundingBoxCanvas({
       setIsResizing(false);
       setResizeHandle(null);
       setOriginalBox(null);
+      // Add to history after resize is complete
+      addToHistory(boxes);
     }
   };
 
@@ -268,6 +305,8 @@ export default function BoundingBoxCanvas({
       const newBoxes = [...boxes, updatedBox];
       setBoxes(newBoxes);
       onBoxesChange?.(newBoxes);
+      // Add to history
+      addToHistory(newBoxes);
 
       // Select the class for future boxes
       onClassSelect(className);
@@ -319,6 +358,8 @@ export default function BoundingBoxCanvas({
       console.log("New boxes array:", newBoxes);
       setBoxes(newBoxes);
       onBoxesChange?.(newBoxes);
+      // Add to history
+      addToHistory(newBoxes);
       setSelectedBoxIndex(null);
       setShowBoxMenu(false);
     }
@@ -334,6 +375,8 @@ export default function BoundingBoxCanvas({
       };
       setBoxes(newBoxes);
       onBoxesChange?.(newBoxes);
+      // Add to history
+      addToHistory(newBoxes);
       setSelectedBoxIndex(null);
       setShowBoxMenu(false);
     }
@@ -357,9 +400,17 @@ export default function BoundingBoxCanvas({
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === "Delete" && selectedBoxIndex !== null) {
+    // Handle undo with Cmd/Ctrl + Z
+    if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+      e.preventDefault();
+      handleUndo();
+    }
+    // Handle delete key
+    else if (e.key === "Delete" && selectedBoxIndex !== null) {
       handleDeleteBox();
-    } else if (e.key === "Escape") {
+    }
+    // Handle escape key
+    else if (e.key === "Escape") {
       if (showClassMenu) {
         handleCloseMenu();
       } else if (showBoxMenu) {
@@ -373,7 +424,7 @@ export default function BoundingBoxCanvas({
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedBoxIndex, showClassMenu, showBoxMenu]);
+  }, [selectedBoxIndex, showClassMenu, showBoxMenu, historyIndex, history]);
 
   return (
     <div
@@ -444,7 +495,7 @@ export default function BoundingBoxCanvas({
             <div className="text-xs text-gray-400">Select class:</div>
             <button
               onClick={handleCloseMenu}
-              className="text-gray-500 hover:text-gray-300 text-xs"
+              className="text-gray-500 hover:text-gray-300 text-xs cursor-pointer"
             >
               ×
             </button>
