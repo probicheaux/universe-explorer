@@ -10,7 +10,7 @@ export default function FindModelButton({
   isLoading,
 }: FindModelButtonProps) {
   return (
-    <div className="absolute bottom-6 right-6 z-10 transition-all duration-500 ease-in-out transform hover:scale-105">
+    <div className="absolute bottom-6 right-6 z-10 transition-all duration-500 ease-in-out transform hover:scale-105 z-30">
       <button
         onClick={onClick}
         disabled={isLoading}
@@ -41,7 +41,7 @@ export default function FindModelButton({
             <span>Finding Model...</span>
           </>
         ) : (
-          <>
+          <div className="flex items-center gap-2 cursor-pointer">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5"
@@ -55,7 +55,7 @@ export default function FindModelButton({
               />
             </svg>
             <span>Find Model</span>
-          </>
+          </div>
         )}
       </button>
     </div>
