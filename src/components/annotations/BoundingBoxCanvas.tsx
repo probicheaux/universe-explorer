@@ -131,20 +131,20 @@ export default function BoundingBoxCanvas({
     setPendingBox(null);
   };
 
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === "Delete" && boxes.length > 0) {
-      const newBoxes = boxes.slice(0, -1);
-      setBoxes(newBoxes);
-      onBoxesChange?.(newBoxes);
-    } else if (e.key === "Escape" && showClassMenu) {
-      handleCloseMenu();
-    }
-  };
-
   useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [boxes, showClassMenu]);
+    const handleKeyDownWrapper = (e: KeyboardEvent) => {
+      if (e.key === "Delete" && boxes.length > 0) {
+        const newBoxes = boxes.slice(0, -1);
+        setBoxes(newBoxes);
+        onBoxesChange?.(newBoxes);
+      } else if (e.key === "Escape" && showClassMenu) {
+        handleCloseMenu();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDownWrapper);
+    return () => window.removeEventListener("keydown", handleKeyDownWrapper);
+  }, [boxes, showClassMenu, onBoxesChange]);
 
   return (
     <div

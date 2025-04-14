@@ -6,21 +6,12 @@ import PromptArea from "./PromptArea";
 import AnnotationToolbar from "./AnnotationToolbar";
 import BoundingBoxCanvas from "./annotations/BoundingBoxCanvas";
 
-interface BoundingBoxData {
-  start: { x: number; y: number };
-  end: { x: number; y: number };
-  label: string;
-  color?: string;
-}
-
 export default function UniverseExplorer() {
   const [image, setImage] = useState<string | undefined>(undefined);
   const [prompt, setPrompt] = useState<string>("");
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [classes, setClasses] = useState<string[]>(["person", "car", "truck"]);
   const [taskType] = useState<string>("Object Detection");
-  // We'll use this state later for saving annotations or processing them
-  const [boxes, setBoxes] = useState<BoundingBoxData[]>([]);
 
   const handleImageChange = (imageData: string) => {
     setImage(imageData);
@@ -36,10 +27,6 @@ export default function UniverseExplorer() {
 
   const handleClassesChange = (newClasses: string[]) => {
     setClasses(newClasses);
-  };
-
-  const handleBoxesChange = (newBoxes: BoundingBoxData[]) => {
-    setBoxes(newBoxes);
   };
 
   return (
@@ -73,7 +60,6 @@ export default function UniverseExplorer() {
             {image && prompt && (
               <BoundingBoxCanvas
                 selectedClass={selectedClass}
-                onBoxesChange={handleBoxesChange}
                 availableClasses={classes}
                 onClassSelect={handleClassSelect}
               />
