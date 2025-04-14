@@ -8,6 +8,24 @@ interface AnnotationToolbarProps {
   onClassSelect?: (className: string) => void;
 }
 
+// Generate a color based on the label
+const getColorForLabel = (label: string): string => {
+  // Use a simple hash function to generate a consistent color for each label
+  let hash = 0;
+  for (let i = 0; i < label.length; i++) {
+    hash = label.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  // Convert to hex color
+  let color = "#";
+  for (let i = 0; i < 3; i++) {
+    const value = (hash >> (i * 8)) & 0xff;
+    color += ("00" + value.toString(16)).substr(-2);
+  }
+
+  return color;
+};
+
 export default function AnnotationToolbar({
   taskType = "Object Detection",
   classes = ["person", "car", "truck"],
@@ -63,32 +81,41 @@ export default function AnnotationToolbar({
           </button>
         </div>
         <div className="flex flex-wrap gap-2 mb-2">
-          {classes.map((cls) => (
-            <div
-              key={cls}
-              className={`group flex items-center px-2 py-1 rounded-md text-xs cursor-pointer transition-all ${
-                cls === selectedClass
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-800/50 text-gray-200 hover:bg-gray-700/50"
-              }`}
-              onClick={() => handleClassClick(cls)}
-            >
-              <span>{cls}</span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemoveClass(cls);
-                }}
-                className={`ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity ${
-                  cls === selectedClass
+          {classes.map((cls) => {
+            const color = getColorForLabel(cls);
+            const isSelected = cls === selectedClass;
+
+            return (
+              <div
+                key={cls}
+                className={`group flex items-center px-2 py-1 rounded-md text-xs cursor-pointer transition-all ${
+                  isSelected
                     ? "text-white"
-                    : "text-gray-500 hover:text-gray-300"
+                    : "text-gray-200 hover:bg-gray-700/50"
                 }`}
+                style={{
+                  backgroundColor: isSelected ? color : "rgba(31, 41, 55, 0.5)",
+                  borderLeft: `3px solid ${color}`,
+                }}
+                onClick={() => handleClassClick(cls)}
               >
-                ×
-              </button>
-            </div>
-          ))}
+                <span>{cls}</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveClass(cls);
+                  }}
+                  className={`ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity ${
+                    isSelected
+                      ? "text-white"
+                      : "text-gray-500 hover:text-gray-300"
+                  }`}
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
         </div>
         {isAddingClass && (
           <div className="flex items-center gap-2">
@@ -125,7 +152,9 @@ export default function AnnotationToolbar({
             Draw bounding boxes around objects you want to detect:
           </p>
           <ol className="list-decimal list-inside space-y-1 text-gray-400">
-            <li>Select a class from the list above</li>
+            <li>
+              Select a class from the list above (or draw first, then select)
+            </li>
             <li>Click and drag to create a box</li>
             <li>
               Press{" "}

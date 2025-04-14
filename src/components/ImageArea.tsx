@@ -1,26 +1,15 @@
 import { useRef } from "react";
-import BoundingBoxCanvas from "./annotations/BoundingBoxCanvas";
-
-interface BoundingBox {
-  start: { x: number; y: number };
-  end: { x: number; y: number };
-  label: string;
-}
 
 interface ImageAreaProps {
   image?: string;
   onImageChange: (image: string) => void;
   isAnnotationMode?: boolean;
-  selectedClass?: string;
-  onBoxesChange?: (boxes: BoundingBox[]) => void;
 }
 
 export default function ImageArea({
   image,
   onImageChange,
   isAnnotationMode = false,
-  selectedClass = "",
-  onBoxesChange,
 }: ImageAreaProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -57,7 +46,7 @@ export default function ImageArea({
 
   return (
     <div
-      className={`relative flex-grow ${
+      className={`relative w-full h-full ${
         !isAnnotationMode ? "cursor-pointer" : ""
       } group`}
       onClick={handleImageClick}
@@ -71,20 +60,12 @@ export default function ImageArea({
       />
       {image ? (
         <>
-          <div className="absolute inset-0">
+          <div className="absolute inset-0 flex items-center justify-center">
             <img
               src={image}
               alt="Uploaded"
-              className="w-full h-full object-cover"
+              className="max-w-full max-h-full object-contain"
             />
-            {isAnnotationMode && (
-              <div className="absolute inset-0">
-                <BoundingBoxCanvas
-                  selectedClass={selectedClass}
-                  onBoxesChange={onBoxesChange}
-                />
-              </div>
-            )}
           </div>
 
           {/* Change Image Button */}

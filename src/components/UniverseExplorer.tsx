@@ -4,63 +4,82 @@ import { useState } from "react";
 import ImageArea from "./ImageArea";
 import PromptArea from "./PromptArea";
 import AnnotationToolbar from "./AnnotationToolbar";
+import BoundingBoxCanvas from "./annotations/BoundingBoxCanvas";
 
-interface ExplorerData {
-  image?: string;
-  prompt?: string;
-}
-
-interface BoundingBox {
+interface BoundingBoxData {
   start: { x: number; y: number };
   end: { x: number; y: number };
   label: string;
+  color?: string;
 }
 
 export default function UniverseExplorer() {
-  const [data, setData] = useState<ExplorerData>({});
-  const [classes, setClasses] = useState<string[]>(["person", "car", "truck"]);
+  const [image, setImage] = useState<string | undefined>(undefined);
+  const [prompt, setPrompt] = useState<string>("");
   const [selectedClass, setSelectedClass] = useState<string>("");
-  const [boxes, setBoxes] = useState<BoundingBox[]>([]);
+  const [classes, setClasses] = useState<string[]>(["person", "car", "truck"]);
+  const [taskType] = useState<string>("Object Detection");
+  // We'll use this state later for saving annotations or processing them
+  const [boxes, setBoxes] = useState<BoundingBoxData[]>([]);
 
-  const showToolbar = data.image && data.prompt;
+  const handleImageChange = (imageData: string) => {
+    setImage(imageData);
+  };
+
+  const handlePromptChange = (newPrompt: string) => {
+    setPrompt(newPrompt);
+  };
+
+  const handleClassSelect = (className: string) => {
+    setSelectedClass(className);
+  };
+
+  const handleClassesChange = (newClasses: string[]) => {
+    setClasses(newClasses);
+  };
+
+  const handleBoxesChange = (newBoxes: BoundingBoxData[]) => {
+    setBoxes(newBoxes);
+  };
 
   return (
-    <div className="w-full h-full flex-1 mx-auto p-6">
-      <div className="w-full h-[600px] bg-gray-900/50 rounded-lg overflow-hidden flex">
-        {/* Toolbar container - fixed width, always present but with zero width when hidden */}
+    <div className="flex flex-col h-screen bg-gray-950 text-white">
+      <div className="flex-1 flex overflow-hidden">
+        {/* Annotation Toolbar */}
         <div
           className={`transition-all duration-500 ease-in-out ${
-            showToolbar ? "w-64" : "w-0"
+            image && prompt ? "w-64" : "w-0"
           } overflow-hidden`}
         >
-          {/* Toolbar - Only render when visible to prevent layout issues */}
-          {showToolbar && (
-            <div className="w-64 h-full">
-              <AnnotationToolbar
-                classes={classes}
-                onClassesChange={setClasses}
-                selectedClass={selectedClass}
-                onClassSelect={setSelectedClass}
-              />
-            </div>
-          )}
+          <div className="w-64 h-full">
+            <AnnotationToolbar
+              taskType={taskType}
+              classes={classes}
+              onClassesChange={handleClassesChange}
+              selectedClass={selectedClass}
+              onClassSelect={handleClassSelect}
+            />
+          </div>
         </div>
 
-        {/* Main content area - always present with full width */}
-        <div className="flex flex-col flex-1">
-          <ImageArea
-            image={data.image}
-            onImageChange={(image) => setData((prev) => ({ ...prev, image }))}
-            isAnnotationMode={showToolbar}
-            selectedClass={selectedClass}
-            onBoxesChange={setBoxes}
-          />
-          <PromptArea
-            prompt={data.prompt}
-            onPromptChange={(prompt) =>
-              setData((prev) => ({ ...prev, prompt }))
-            }
-          />
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 relative overflow-hidden">
+            <ImageArea
+              image={image}
+              onImageChange={handleImageChange}
+              isAnnotationMode={!!(image && prompt)}
+            />
+            {image && prompt && (
+              <BoundingBoxCanvas
+                selectedClass={selectedClass}
+                onBoxesChange={handleBoxesChange}
+                availableClasses={classes}
+                onClassSelect={handleClassSelect}
+              />
+            )}
+          </div>
+          <PromptArea prompt={prompt} onPromptChange={handlePromptChange} />
         </div>
       </div>
     </div>

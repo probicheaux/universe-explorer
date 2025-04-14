@@ -11,22 +11,30 @@ interface BoundingBoxData {
   start: Point;
   end: Point;
   label: string;
+  color?: string;
 }
 
 interface BoundingBoxCanvasProps {
   selectedClass: string;
   onBoxesChange?: (boxes: BoundingBoxData[]) => void;
+  availableClasses?: string[];
+  onClassSelect?: (className: string) => void;
 }
 
 export default function BoundingBoxCanvas({
   selectedClass,
   onBoxesChange,
+  availableClasses = [],
+  onClassSelect,
 }: BoundingBoxCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentBox, setCurrentBox] = useState<BoundingBoxData | null>(null);
   const [boxes, setBoxes] = useState<BoundingBoxData[]>([]);
   const [mousePosition, setMousePosition] = useState<Point>({ x: 0, y: 0 });
+  const [showClassMenu, setShowClassMenu] = useState(false);
+  const [pendingBox, setPendingBox] = useState<BoundingBoxData | null>(null);
+  const [menuPosition, setMenuPosition] = useState<Point>({ x: 0, y: 0 });
 
   const getRelativeCoordinates = (e: React.MouseEvent): Point => {
     if (!canvasRef.current) return { x: 0, y: 0 };
@@ -41,17 +49,19 @@ export default function BoundingBoxCanvas({
     e.preventDefault();
     e.stopPropagation();
 
-    console.log("Mouse down", { selectedClass, isDrawing });
-
-    if (!selectedClass) {
-      console.log("No class selected");
-      return;
-    }
+    // If we're showing the class menu, don't start a new box
+    if (showClassMenu) return;
 
     setIsDrawing(true);
     const start = getRelativeCoordinates(e);
-    console.log("Starting box at", start);
-    setCurrentBox({ start, end: start, label: selectedClass });
+
+    // If we have a selected class, use it
+    if (selectedClass) {
+      setCurrentBox({ start, end: start, label: selectedClass });
+    } else {
+      // Otherwise, create a temporary box with a placeholder label
+      setCurrentBox({ start, end: start, label: "Select class..." });
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -62,7 +72,6 @@ export default function BoundingBoxCanvas({
     setMousePosition(position);
 
     if (isDrawing && currentBox) {
-      console.log("Updating box", { start: currentBox.start, end: position });
       setCurrentBox({ ...currentBox, end: position });
     }
   };
@@ -71,8 +80,6 @@ export default function BoundingBoxCanvas({
     e.preventDefault();
     e.stopPropagation();
 
-    console.log("Mouse up", { isDrawing, currentBox });
-
     if (!isDrawing || !currentBox) return;
 
     // Only add box if it has some size
@@ -80,16 +87,48 @@ export default function BoundingBoxCanvas({
       Math.abs(currentBox.end.x - currentBox.start.x) > 5 &&
       Math.abs(currentBox.end.y - currentBox.start.y) > 5
     ) {
-      console.log("Adding box", currentBox);
-      const newBoxes = [...boxes, currentBox];
-      setBoxes(newBoxes);
-      onBoxesChange?.(newBoxes);
-    } else {
-      console.log("Box too small, discarding");
+      // If we have a selected class, add the box directly
+      if (selectedClass) {
+        const newBoxes = [...boxes, currentBox];
+        setBoxes(newBoxes);
+        onBoxesChange?.(newBoxes);
+      } else {
+        // Otherwise, show the class selection menu
+        setPendingBox(currentBox);
+
+        // Position the menu right next to the cursor
+        setMenuPosition({
+          x: e.clientX,
+          y: e.clientY,
+        });
+
+        setShowClassMenu(true);
+      }
     }
 
     setIsDrawing(false);
     setCurrentBox(null);
+  };
+
+  const handleClassSelect = (className: string) => {
+    if (pendingBox && onClassSelect) {
+      // Update the box with the selected class
+      const updatedBox = { ...pendingBox, label: className };
+      const newBoxes = [...boxes, updatedBox];
+      setBoxes(newBoxes);
+      onBoxesChange?.(newBoxes);
+
+      // Select the class for future boxes
+      onClassSelect(className);
+    }
+
+    setShowClassMenu(false);
+    setPendingBox(null);
+  };
+
+  const handleCloseMenu = () => {
+    setShowClassMenu(false);
+    setPendingBox(null);
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
@@ -97,13 +136,15 @@ export default function BoundingBoxCanvas({
       const newBoxes = boxes.slice(0, -1);
       setBoxes(newBoxes);
       onBoxesChange?.(newBoxes);
+    } else if (e.key === "Escape" && showClassMenu) {
+      handleCloseMenu();
     }
   };
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [boxes]);
+  }, [boxes, showClassMenu]);
 
   return (
     <div
@@ -125,6 +166,7 @@ export default function BoundingBoxCanvas({
           start={box.start}
           end={box.end}
           label={box.label}
+          color={box.color}
         />
       ))}
 
@@ -136,6 +178,49 @@ export default function BoundingBoxCanvas({
           label={currentBox.label}
           isActive={true}
         />
+      )}
+
+      {/* Pending Box (when no class is selected) */}
+      {pendingBox && !currentBox && (
+        <BoundingBox
+          start={pendingBox.start}
+          end={pendingBox.end}
+          label={pendingBox.label}
+          isActive={true}
+        />
+      )}
+
+      {/* Class Selection Menu */}
+      {showClassMenu && (
+        <div
+          className="absolute z-20 bg-gray-900/90 backdrop-blur-md rounded-lg shadow-lg p-2 min-w-[150px]"
+          style={{
+            left: menuPosition.x,
+            top: menuPosition.y,
+            transform: "translate(10px, 10px)", // Position right next to the cursor
+          }}
+        >
+          <div className="flex justify-between items-center mb-2 px-2">
+            <div className="text-xs text-gray-400">Select class:</div>
+            <button
+              onClick={handleCloseMenu}
+              className="text-gray-500 hover:text-gray-300 text-xs"
+            >
+              ×
+            </button>
+          </div>
+          <div className="flex flex-col gap-1">
+            {availableClasses.map((cls) => (
+              <button
+                key={cls}
+                className="text-left px-3 py-1.5 rounded-md text-sm text-gray-200 hover:bg-gray-800 transition-colors"
+                onClick={() => handleClassSelect(cls)}
+              >
+                {cls}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
