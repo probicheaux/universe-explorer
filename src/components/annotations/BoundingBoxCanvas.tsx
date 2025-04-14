@@ -86,9 +86,7 @@ export default function BoundingBoxCanvas({
   return (
     <div
       ref={canvasRef}
-      className={`absolute inset-0 z-10 ${
-        isDrawing ? "cursor-crosshair" : "cursor-default"
-      }`}
+      className="absolute inset-0 z-50 cursor-crosshair"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
