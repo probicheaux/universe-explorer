@@ -66,7 +66,7 @@ function BoundingBox({
 
   return (
     <div
-      className={`absolute group ${
+      className={`absolute group rounded-md ${
         isSelected ? "z-20 cursor-grab active:cursor-grabbing" : "z-10"
       } cursor-pointer`}
       style={{
