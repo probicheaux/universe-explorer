@@ -48,12 +48,11 @@ function DrawingGuides({
       {/* Class Label */}
       {selectedClass && (
         <div
-          className="absolute px-2 py-1 rounded-md text-xs font-medium backdrop-blur-md"
+          className="absolute px-2 py-1 rounded-md text-xs font-medium backdrop-blur-md !text-white"
           style={{
             left: x + 10,
             top: y + 10,
             backgroundColor: `${guideColor}33`,
-            color: guideColor,
           }}
         >
           draw {selectedClass}
