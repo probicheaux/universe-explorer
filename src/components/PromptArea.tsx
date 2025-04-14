@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import PromptInput from "./PromptInput";
 
 interface PromptAreaProps {
@@ -11,10 +11,28 @@ export default function PromptArea({
   onPromptChange,
 }: PromptAreaProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node) &&
+        isEditing
+      ) {
+        setIsEditing(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isEditing]);
 
   return (
     <div className="p-6 bg-gray-900/80 border-t border-gray-800">
-      <div className="relative min-h-[120px]">
+      <div ref={containerRef} className="relative min-h-[120px]">
         {/* Static Prompt View */}
         <div
           className={`cursor-pointer transition-all duration-300 ${
@@ -52,6 +70,7 @@ export default function PromptArea({
               onPromptChange(data.prompt);
               setIsEditing(false);
             }}
+            onBlur={() => setIsEditing(false)}
             initialValue={prompt}
           />
         </div>
