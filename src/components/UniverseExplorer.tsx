@@ -7,6 +7,7 @@ import AnnotationToolbar from "./AnnotationToolbar";
 import BoundingBoxCanvas from "./annotations/BoundingBoxCanvas";
 import FindModelButton from "./FindModelButton";
 import { getColorForLabel } from "../utils/colors";
+import api from "@/utils/api";
 
 export default function UniverseExplorer() {
   const [image, setImage] = useState<string | undefined>(undefined);
@@ -60,18 +61,9 @@ export default function UniverseExplorer() {
       // Remove the data:image/jpeg;base64, prefix if present
       const base64Data = image.includes(",") ? image.split(",")[1] : image;
 
-      const response = await fetch("/api/infer", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          image: base64Data,
-        }),
-      });
+      const response = await api.inference.inferImage(base64Data);
 
-      const data = await response.json();
-      console.log("Model inference result:", data);
+      console.log("Model inference result:", response);
     } catch (error) {
       console.error("Error finding model:", error);
     } finally {

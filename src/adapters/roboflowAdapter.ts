@@ -11,7 +11,7 @@ type BoundingBoxPrediction = {
   confidence: number;
 };
 
-type InferImageResponse = {
+export type InferImageResponse = {
   inference_id: string;
   time: number;
   image: {

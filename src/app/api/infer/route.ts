@@ -47,11 +47,9 @@ export async function POST(request: NextRequest) {
     };
 
     const modelUrl = `${firstDataset._source.url}/${firstDataset._source.latestVersion}`;
+    const inferenceResponse = await inferImage(modelUrl, image);
 
-    // Make the inference request
-    const response = await inferImage(modelUrl, image);
-
-    return NextResponse.json({ response });
+    return NextResponse.json(inferenceResponse);
   } catch (error) {
     console.error("Error processing inference request:", error);
     return NextResponse.json(
