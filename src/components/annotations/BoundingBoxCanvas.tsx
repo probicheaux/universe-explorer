@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import BoundingBox from "./BoundingBox";
 import DrawingGuides from "./DrawingGuides";
 
@@ -93,17 +93,20 @@ export default function BoundingBoxCanvas({
   }, [classColors]);
 
   // Function to add a new state to history
-  const addToHistory = (newBoxes: BoundingBoxData[]) => {
-    // Remove any future states if we're not at the end of history
-    const newHistory = history.slice(0, historyIndex + 1);
-    // Add the new state
-    newHistory.push([...newBoxes]);
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-  };
+  const addToHistory = useCallback(
+    (newBoxes: BoundingBoxData[]) => {
+      // Remove any future states if we're not at the end of history
+      const newHistory = history.slice(0, historyIndex + 1);
+      // Add the new state
+      newHistory.push([...newBoxes]);
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    },
+    [history, historyIndex]
+  );
 
   // Function to undo the last action
-  const handleUndo = () => {
+  const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
@@ -111,7 +114,7 @@ export default function BoundingBoxCanvas({
       setBoxes(previousBoxes);
       onBoxesChange?.(previousBoxes);
     }
-  };
+  }, [historyIndex, history, onBoxesChange]);
 
   const getRelativeCoordinates = (e: React.MouseEvent): Point => {
     if (!canvasRef.current) return { x: 0, y: 0 };
@@ -339,10 +342,10 @@ export default function BoundingBoxCanvas({
     setPendingBox(null);
   };
 
-  const handleCloseMenu = () => {
+  const handleCloseMenu = useCallback(() => {
     setShowClassMenu(false);
     setPendingBox(null);
-  };
+  }, []);
 
   const handleBoxHover = (isHovering: boolean) => {
     setIsHoveringBox(isHovering);
@@ -373,7 +376,7 @@ export default function BoundingBoxCanvas({
     }
   };
 
-  const handleDeleteBox = () => {
+  const handleDeleteBox = useCallback(() => {
     console.log("Delete box clicked, selectedBoxIndex:", selectedBoxIndex);
     if (selectedBoxIndex !== null) {
       console.log("Deleting box at index:", selectedBoxIndex);
@@ -386,7 +389,7 @@ export default function BoundingBoxCanvas({
       setSelectedBoxIndex(null);
       setShowBoxMenu(false);
     }
-  };
+  }, [selectedBoxIndex, boxes, onBoxesChange, addToHistory]);
 
   const handleChangeClass = (className: string) => {
     if (selectedBoxIndex !== null) {
@@ -422,32 +425,42 @@ export default function BoundingBoxCanvas({
     }
   };
 
-  const handleKeyDown = (e: KeyboardEvent) => {
-    // Handle undo with Cmd/Ctrl + Z
-    if ((e.metaKey || e.ctrlKey) && e.key === "z") {
-      e.preventDefault();
-      handleUndo();
-    }
-    // Handle delete key
-    else if (e.key === "Delete" && selectedBoxIndex !== null) {
-      handleDeleteBox();
-    }
-    // Handle escape key
-    else if (e.key === "Escape") {
-      if (showClassMenu) {
-        handleCloseMenu();
-      } else if (showBoxMenu) {
-        setShowBoxMenu(false);
-      } else if (selectedBoxIndex !== null) {
-        setSelectedBoxIndex(null);
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      // Handle undo with Cmd/Ctrl + Z
+      if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+        e.preventDefault();
+        handleUndo();
       }
-    }
-  };
+      // Handle delete key
+      else if (e.key === "Delete" && selectedBoxIndex !== null) {
+        handleDeleteBox();
+      }
+      // Handle escape key
+      else if (e.key === "Escape") {
+        if (showClassMenu) {
+          handleCloseMenu();
+        } else if (showBoxMenu) {
+          setShowBoxMenu(false);
+        } else if (selectedBoxIndex !== null) {
+          setSelectedBoxIndex(null);
+        }
+      }
+    },
+    [
+      selectedBoxIndex,
+      showClassMenu,
+      showBoxMenu,
+      handleUndo,
+      handleDeleteBox,
+      handleCloseMenu,
+    ]
+  );
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedBoxIndex, showClassMenu, showBoxMenu, historyIndex, history]);
+  }, [handleKeyDown]);
 
   return (
     <div

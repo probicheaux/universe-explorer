@@ -1,109 +1,102 @@
-import { useRef } from "react";
+import { useState } from "react";
+import Image from "next/image";
 
 interface ImageAreaProps {
   image?: string;
-  onImageChange: (image: string) => void;
-  isAnnotationMode?: boolean;
+  onImageChange?: (imageData: string) => void;
 }
 
-export default function ImageArea({
-  image,
-  onImageChange,
-  isAnnotationMode = false,
-}: ImageAreaProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+export default function ImageArea({ image, onImageChange }: ImageAreaProps) {
+  const [isDragging, setIsDragging] = useState(false);
 
-  const handleImageClick = (e: React.MouseEvent) => {
-    // Only handle click if not in annotation mode
-    if (isAnnotationMode) {
-      e.stopPropagation();
-      return;
-    }
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
 
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      handleFile(file);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      handleFile(file);
+    }
+  };
+
+  const handleFile = (file: File) => {
+    if (file.type.startsWith("image/")) {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64Image = event.target?.result as string;
-        onImageChange(base64Image);
+      reader.onload = (e) => {
+        if (e.target?.result && onImageChange) {
+          onImageChange(e.target.result as string);
+        }
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleChangeImageClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
   return (
     <div
-      className={`relative w-full h-full ${
-        !isAnnotationMode ? "cursor-pointer" : ""
-      } group`}
-      onClick={handleImageClick}
+      className={`relative w-full h-full flex items-center justify-center ${
+        isDragging ? "bg-gray-800/50" : ""
+      }`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleFileChange}
-        className="hidden"
-        ref={fileInputRef}
-      />
       {image ? (
-        <>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <img
-              src={image}
-              alt="Uploaded"
-              className="max-w-full max-h-full object-contain"
-            />
-          </div>
-
-          {/* Change Image Button */}
-          {isAnnotationMode && (
-            <div className="absolute top-4 right-4 z-10">
-              <button
-                onClick={handleChangeImageClick}
-                className="bg-gray-900/80 hover:bg-gray-800/90 text-gray-300 px-3 py-1.5 rounded-md text-sm flex items-center gap-2 hover:cursor-pointer hover:scale-110 transition-all duration-200 hover:shadow-lg hover:opacity-100"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Change Image
-              </button>
-            </div>
-          )}
-
-          {/* Hover Overlay */}
-          {!isAnnotationMode && (
-            <div className="absolute inset-0 bg-gray-950/0 group-hover:bg-gray-950/40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-              <div className="bg-gray-900/80 px-4 py-2 rounded-lg text-gray-300 text-sm transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                Click to change image
-              </div>
-            </div>
-          )}
-        </>
+        <div className="relative w-full h-full flex items-center justify-center">
+          <Image
+            src={image}
+            alt="Uploaded image"
+            fill
+            className="max-w-full max-h-full object-contain"
+            priority
+          />
+        </div>
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-          Click to upload an image
+        <div className="text-center p-8">
+          <div className="mb-4 text-gray-400">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-16 w-16 mx-auto"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1}
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+          <p className="text-gray-400 mb-4">
+            Drag and drop an image here, or click to select
+          </p>
+          <label className="cursor-pointer bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition-colors">
+            Select Image
+            <input
+              type="file"
+              className="hidden"
+              accept="image/*"
+              onChange={handleFileInput}
+            />
+          </label>
         </div>
       )}
     </div>
