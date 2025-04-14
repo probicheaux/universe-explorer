@@ -19,6 +19,7 @@ interface BoundingBoxCanvasProps {
   onBoxesChange?: (boxes: BoundingBoxData[]) => void;
   availableClasses?: string[];
   onClassSelect?: (className: string) => void;
+  classColors?: Record<string, string>;
 }
 
 export default function BoundingBoxCanvas({
@@ -26,6 +27,7 @@ export default function BoundingBoxCanvas({
   onBoxesChange,
   availableClasses = [],
   onClassSelect,
+  classColors = {},
 }: BoundingBoxCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -57,7 +59,12 @@ export default function BoundingBoxCanvas({
 
     // If we have a selected class, use it
     if (selectedClass) {
-      setCurrentBox({ start, end: start, label: selectedClass });
+      setCurrentBox({
+        start,
+        end: start,
+        label: selectedClass,
+        color: classColors[selectedClass],
+      });
     } else {
       // Otherwise, create a temporary box with a placeholder label
       setCurrentBox({ start, end: start, label: "Select class..." });
@@ -113,7 +120,11 @@ export default function BoundingBoxCanvas({
   const handleClassSelect = (className: string) => {
     if (pendingBox && onClassSelect) {
       // Update the box with the selected class
-      const updatedBox = { ...pendingBox, label: className };
+      const updatedBox = {
+        ...pendingBox,
+        label: className,
+        color: classColors[className],
+      };
       const newBoxes = [...boxes, updatedBox];
       setBoxes(newBoxes);
       onBoxesChange?.(newBoxes);
@@ -131,19 +142,19 @@ export default function BoundingBoxCanvas({
     setPendingBox(null);
   };
 
-  useEffect(() => {
-    const handleKeyDownWrapper = (e: KeyboardEvent) => {
-      if (e.key === "Delete" && boxes.length > 0) {
-        const newBoxes = boxes.slice(0, -1);
-        setBoxes(newBoxes);
-        onBoxesChange?.(newBoxes);
-      } else if (e.key === "Escape" && showClassMenu) {
-        handleCloseMenu();
-      }
-    };
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Delete" && boxes.length > 0) {
+      const newBoxes = boxes.slice(0, -1);
+      setBoxes(newBoxes);
+      onBoxesChange?.(newBoxes);
+    } else if (e.key === "Escape" && showClassMenu) {
+      handleCloseMenu();
+    }
+  };
 
-    window.addEventListener("keydown", handleKeyDownWrapper);
-    return () => window.removeEventListener("keydown", handleKeyDownWrapper);
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [boxes, showClassMenu, onBoxesChange]);
 
   return (
@@ -157,7 +168,11 @@ export default function BoundingBoxCanvas({
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
-      <DrawingGuides mousePosition={mousePosition} />
+      <DrawingGuides
+        mousePosition={mousePosition}
+        selectedClass={selectedClass}
+        color={selectedClass ? classColors[selectedClass] : undefined}
+      />
 
       {/* Existing Boxes */}
       {boxes.map((box, index) => (
@@ -177,6 +192,7 @@ export default function BoundingBoxCanvas({
           end={currentBox.end}
           label={currentBox.label}
           isActive={true}
+          color={currentBox.color}
         />
       )}
 
@@ -187,6 +203,7 @@ export default function BoundingBoxCanvas({
           end={pendingBox.end}
           label={pendingBox.label}
           isActive={true}
+          color={pendingBox.color}
         />
       )}
 
@@ -215,6 +232,9 @@ export default function BoundingBoxCanvas({
                 key={cls}
                 className="text-left px-3 py-1.5 rounded-md text-sm text-gray-200 hover:bg-gray-800 transition-colors"
                 onClick={() => handleClassSelect(cls)}
+                style={{
+                  color: classColors[cls],
+                }}
               >
                 {cls}
               </button>

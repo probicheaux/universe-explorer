@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import ImageArea from "./ImageArea";
 import PromptArea from "./PromptArea";
 import AnnotationToolbar from "./AnnotationToolbar";
 import BoundingBoxCanvas from "./annotations/BoundingBoxCanvas";
+import { getColorForLabel } from "../utils/colors";
 
 export default function UniverseExplorer() {
   const [image, setImage] = useState<string | undefined>(undefined);
@@ -12,6 +13,14 @@ export default function UniverseExplorer() {
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [classes, setClasses] = useState<string[]>(["person", "car", "truck"]);
   const [taskType] = useState<string>("Object Detection");
+
+  // Generate colors for all classes
+  const classColors = useMemo(() => {
+    return classes.reduce((acc, className) => {
+      acc[className] = getColorForLabel(className);
+      return acc;
+    }, {} as Record<string, string>);
+  }, [classes]);
 
   const handleImageChange = (imageData: string) => {
     setImage(imageData);
@@ -45,6 +54,7 @@ export default function UniverseExplorer() {
               onClassesChange={handleClassesChange}
               selectedClass={selectedClass}
               onClassSelect={handleClassSelect}
+              classColors={classColors}
             />
           </div>
         </div>
@@ -62,6 +72,7 @@ export default function UniverseExplorer() {
                 selectedClass={selectedClass}
                 availableClasses={classes}
                 onClassSelect={handleClassSelect}
+                classColors={classColors}
               />
             )}
           </div>

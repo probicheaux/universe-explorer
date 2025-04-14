@@ -6,6 +6,7 @@ interface AnnotationToolbarProps {
   onClassesChange?: (classes: string[]) => void;
   selectedClass?: string;
   onClassSelect?: (className: string) => void;
+  classColors?: Record<string, string>;
 }
 
 // Generate a color based on the label
@@ -32,6 +33,7 @@ export default function AnnotationToolbar({
   onClassesChange,
   selectedClass = "",
   onClassSelect,
+  classColors = {},
 }: AnnotationToolbarProps) {
   const [newClass, setNewClass] = useState("");
   const [isAddingClass, setIsAddingClass] = useState(false);
@@ -82,7 +84,7 @@ export default function AnnotationToolbar({
         </div>
         <div className="flex flex-wrap gap-2 mb-2">
           {classes.map((cls) => {
-            const color = getColorForLabel(cls);
+            const color = classColors[cls] || "#666666";
             const isSelected = cls === selectedClass;
 
             return (
