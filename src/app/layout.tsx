@@ -8,22 +8,18 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Universe Explorer - Roboflow Universe",
-  description: "Explore the power of computer vision with Roboflow Universe",
+  title: "Universe Explorer",
+  description: "Explore and understand your images with AI",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en" className="dark">
-      <body
-        className={`${inter.variable} antialiased bg-gray-950 text-white font-sans`}
-      >
-        {children}
-      </body>
+    <html lang="en" className={`${inter.variable} font-sans`}>
+      <body className="bg-gray-950 text-gray-100 antialiased">{children}</body>
     </html>
   );
 }

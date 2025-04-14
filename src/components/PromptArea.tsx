@@ -32,7 +32,7 @@ export default function PromptArea({
 
   return (
     <div className="p-6 bg-gray-900/80 border-t border-gray-800">
-      <div ref={containerRef} className="relative min-h-[120px]">
+      <div ref={containerRef} className="relative min-h-[160px]">
         {/* Static Prompt View */}
         <div
           className={`cursor-pointer transition-all duration-300 ${

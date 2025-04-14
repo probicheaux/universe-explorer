@@ -54,18 +54,20 @@ export default function PromptInput({
 
   return (
     <div className="relative">
-      <label
-        htmlFor="prompt"
-        className="block text-sm font-medium text-gray-300 mb-2"
-      >
-        What would you like to explore about this image?
-      </label>
+      <div className="space-y-2 mb-4">
+        <h3 className="text-xl font-semibold tracking-tight text-gray-100">
+          What do you want to understand about your image?
+        </h3>
+        <p className="text-sm text-gray-400 leading-relaxed">
+          Identify in plain English what you want to understand about your image
+        </p>
+      </div>
       <textarea
         ref={textareaRef}
         id="prompt"
         rows={3}
         className="w-full px-4 py-3 bg-gray-900/50 border border-gray-800 rounded-lg focus:ring-2 focus:ring-gray-700 focus:border-transparent text-gray-200 placeholder-gray-500 resize-none"
-        placeholder="Describe what you want to explore..."
+        placeholder="I want to identify people and cars in street footage from my security camera"
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
         onKeyDown={handleKeyDown}
