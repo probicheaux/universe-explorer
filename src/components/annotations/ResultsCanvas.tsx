@@ -29,7 +29,7 @@ export default function ResultsCanvas({ results = [] }: ResultsCanvasProps) {
     },
   ];
 
-  const boxesToDisplay = hardcodedBoxes;
+  const boxesToDisplay = results?.[0]?.predictions ?? [];
 
   return (
     <div className="absolute inset-0 z-10">

@@ -39,9 +39,10 @@ export default function UniverseExplorer() {
   }, [classes, selectedClass]);
 
   const handleImageChange = (imageData: string) => {
-    setImage(imageData);
     // Clear bounding boxes when image changes
     setBoxes([]);
+    setInferenceResults([]);
+    setImage(imageData);
   };
 
   const handlePromptChange = (newPrompt: string) => {
