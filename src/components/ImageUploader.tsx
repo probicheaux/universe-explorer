@@ -5,11 +5,13 @@ import { useState, useRef, ChangeEvent, DragEvent } from "react";
 interface ImageUploaderProps {
   onImageChange: (base64Image: string) => void;
   onComplete: (data: { image: string }) => void;
+  onClose?: () => void;
 }
 
 export default function ImageUploader({
   onImageChange,
   onComplete,
+  onClose,
 }: ImageUploaderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);

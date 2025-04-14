@@ -1,26 +1,27 @@
 "use client";
 
-import { useState, ChangeEvent, FormEvent } from "react";
+import { useState, useEffect } from "react";
 
 interface PromptInputProps {
   onSubmit: (prompt: string) => void;
   onComplete: (data: { prompt: string }) => void;
-  disabled?: boolean;
+  initialValue?: string;
 }
 
 export default function PromptInput({
   onSubmit,
   onComplete,
-  disabled = false,
+  initialValue = "",
 }: PromptInputProps) {
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] = useState(initialValue);
 
-  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    setPrompt(e.target.value);
-  };
+  useEffect(() => {
+    if (initialValue) {
+      setPrompt(initialValue);
+    }
+  }, [initialValue]);
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
+  const handleBlur = () => {
     if (prompt.trim()) {
       onSubmit(prompt);
       onComplete({ prompt });
@@ -28,28 +29,23 @@ export default function PromptInput({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full">
-      <div className="relative">
-        <textarea
-          value={prompt}
-          onChange={handleChange}
-          placeholder="Enter your prompt here..."
-          className="w-full h-24 px-4 py-3 bg-gray-900/50 border border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-700 focus:border-transparent text-white placeholder-gray-500 resize-none font-light"
-          disabled={disabled}
-        />
-        <button
-          type="submit"
-          disabled={!prompt.trim() || disabled}
-          className={`absolute bottom-3 right-3 px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200
-            ${
-              !prompt.trim() || disabled
-                ? "bg-gray-900/50 text-gray-500 cursor-not-allowed"
-                : "bg-gray-800 hover:bg-gray-700 text-white"
-            }`}
-        >
-          Submit
-        </button>
-      </div>
-    </form>
+    <div>
+      <label
+        htmlFor="prompt"
+        className="block text-sm font-medium text-gray-300 mb-2"
+      >
+        What would you like to explore about this image?
+      </label>
+      <textarea
+        id="prompt"
+        rows={3}
+        className="w-full px-4 py-3 bg-gray-900/50 border border-gray-800 rounded-lg focus:ring-2 focus:ring-gray-700 focus:border-transparent text-gray-200 placeholder-gray-500 resize-none"
+        placeholder="Describe what you want to explore..."
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        onBlur={handleBlur}
+        autoFocus
+      />
+    </div>
   );
 }

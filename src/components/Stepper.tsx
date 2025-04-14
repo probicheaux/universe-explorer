@@ -69,6 +69,10 @@ const Stepper = forwardRef<StepperRef, StepperProps>(
       completeStep,
     }));
 
+    // Get the image and prompt data
+    const imageData = previewData[1];
+    const promptData = previewData[2];
+
     return (
       <div className="w-full max-w-5xl mx-auto">
         {/* Step indicators */}
@@ -141,58 +145,58 @@ const Stepper = forwardRef<StepperRef, StepperProps>(
 
         {/* Current step content */}
         <div className="relative min-h-[400px]">
-          {steps.map((step) => (
-            <div
-              key={step.id}
-              className={`absolute inset-0 transition-all duration-500 transform ${
-                currentStep === step.id
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-8 pointer-events-none"
-              }`}
-            >
-              {step.content}
-            </div>
-          ))}
-        </div>
-
-        {/* Preview section */}
-        {Object.keys(previewData).length > 0 && (
-          <div className="mt-12 border-t border-gray-800 pt-8">
-            <h3 className="text-lg font-medium text-gray-200 mb-4">Preview</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.entries(previewData).map(([stepId, data]) => {
-                const step = steps.find((s) => s.id === parseInt(stepId));
-                if (!step) return null;
-
-                return (
-                  <div
-                    key={stepId}
-                    className="bg-gray-900/50 rounded-lg p-4 border border-gray-800"
-                  >
-                    <h4 className="text-sm font-medium text-gray-300 mb-2">
-                      {step.title}
-                    </h4>
-                    {data.image && (
-                      <div className="mb-3">
+          {steps.map((step) => {
+            // For step 3, show the preview data if available
+            if (step.id === 3 && imageData && promptData) {
+              return (
+                <div
+                  key={step.id}
+                  className={`absolute inset-0 transition-all duration-500 transform ${
+                    currentStep === step.id
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-8 pointer-events-none"
+                  }`}
+                >
+                  <div className="w-full h-[600px] bg-gray-900/50 rounded-lg overflow-hidden flex flex-col">
+                    <div className="relative flex-grow">
+                      {imageData.image ? (
                         <img
-                          src={data.image}
+                          src={imageData.image}
                           alt="Uploaded"
-                          className="w-full h-32 object-cover rounded-md"
+                          className="absolute inset-0 w-full h-full object-cover"
                         />
-                      </div>
-                    )}
-                    {data.prompt && (
-                      <div className="text-sm text-gray-400">
-                        <span className="font-medium">Prompt:</span>{" "}
-                        {data.prompt}
-                      </div>
-                    )}
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                          Your image will appear here
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-6 bg-gray-900/80 border-t border-gray-800">
+                      <h3 className="text-lg font-medium text-gray-200 mb-2">
+                        Your Prompt
+                      </h3>
+                      <div className="text-gray-300">{promptData.prompt}</div>
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+                </div>
+              );
+            }
+
+            // For other steps, show their original content
+            return (
+              <div
+                key={step.id}
+                className={`absolute inset-0 transition-all duration-500 transform ${
+                  currentStep === step.id
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-8 pointer-events-none"
+                }`}
+              >
+                {step.content}
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   }
