@@ -1,3 +1,4 @@
+import React from "react";
 import { memo } from "react";
 
 interface Point {
@@ -27,20 +28,20 @@ function DrawingGuides({
     <>
       {/* Horizontal Guide */}
       <div
-        className="absolute w-full h-[1px]"
+        className="absolute w-full h-[2px]"
         style={{
           top: y,
-          backgroundColor: guideColor,
+          borderTop: `2px dashed ${guideColor}`,
           opacity: 0.5,
         }}
       />
 
       {/* Vertical Guide */}
       <div
-        className="absolute h-full w-[1px]"
+        className="absolute h-full w-[2px]"
         style={{
           left: x,
-          backgroundColor: guideColor,
+          borderLeft: `2px dashed ${guideColor}`,
           opacity: 0.5,
         }}
       />
