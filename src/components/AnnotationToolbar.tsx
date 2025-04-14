@@ -29,7 +29,7 @@ export default function AnnotationToolbar({
   };
 
   return (
-    <div className="w-64 bg-gray-900/80 backdrop-blur-md rounded-lg p-4 border border-gray-800 shadow-lg h-full">
+    <div className="w-64 h-full bg-gray-900/80 backdrop-blur-md rounded-lg p-4 border border-gray-800 shadow-lg h-full">
       {/* Task Type */}
       <div className="mb-4">
         <h3 className="text-sm font-medium text-gray-400 mb-1">Task Type</h3>

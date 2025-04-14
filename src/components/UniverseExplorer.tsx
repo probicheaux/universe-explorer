@@ -27,7 +27,7 @@ export default function UniverseExplorer() {
         >
           {/* Toolbar - Only render when visible to prevent layout issues */}
           {showToolbar && (
-            <div className="w-64">
+            <div className="w-64 h-full">
               <AnnotationToolbar
                 classes={classes}
                 onClassesChange={setClasses}
@@ -41,6 +41,7 @@ export default function UniverseExplorer() {
           <ImageArea
             image={data.image}
             onImageChange={(image) => setData((prev) => ({ ...prev, image }))}
+            isAnnotationMode={showToolbar}
           />
           <PromptArea
             prompt={data.prompt}
