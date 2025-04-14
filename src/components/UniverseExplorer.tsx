@@ -46,7 +46,7 @@ export default function UniverseExplorer() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950 text-white">
+    <div className="flex flex-col h-full bg-gray-950 text-white">
       <div className="flex-1 flex overflow-hidden">
         {/* Annotation Toolbar */}
         <div
