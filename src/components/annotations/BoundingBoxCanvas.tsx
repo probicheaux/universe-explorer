@@ -16,18 +16,18 @@ interface BoundingBoxData {
 
 interface BoundingBoxCanvasProps {
   selectedClass: string;
-  onBoxesChange?: (boxes: BoundingBoxData[]) => void;
-  availableClasses?: string[];
-  onClassSelect?: (className: string) => void;
-  classColors?: Record<string, string>;
+  onBoxesChange?: (boxes: any[]) => void;
+  availableClasses: string[];
+  onClassSelect: (className: string) => void;
+  classColors: Record<string, string>;
 }
 
 export default function BoundingBoxCanvas({
   selectedClass,
   onBoxesChange,
-  availableClasses = [],
+  availableClasses,
   onClassSelect,
-  classColors = {},
+  classColors,
 }: BoundingBoxCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -461,6 +461,13 @@ export default function BoundingBoxCanvas({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+  // Update parent component when boxes change
+  useEffect(() => {
+    if (onBoxesChange) {
+      onBoxesChange(boxes);
+    }
+  }, [boxes, onBoxesChange]);
 
   return (
     <div

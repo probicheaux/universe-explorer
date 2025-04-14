@@ -5,6 +5,7 @@ import ImageArea from "./ImageArea";
 import PromptArea from "./PromptArea";
 import AnnotationToolbar from "./AnnotationToolbar";
 import BoundingBoxCanvas from "./annotations/BoundingBoxCanvas";
+import FindModelButton from "./FindModelButton";
 import { getColorForLabel } from "../utils/colors";
 
 export default function UniverseExplorer() {
@@ -13,6 +14,8 @@ export default function UniverseExplorer() {
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [classes, setClasses] = useState<string[]>(["person", "car", "truck"]);
   const [taskType] = useState<string>("Object Detection");
+  const [boxes, setBoxes] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Generate colors for all classes
   const classColors = useMemo(() => {
@@ -45,6 +48,42 @@ export default function UniverseExplorer() {
     setClasses(newClasses);
   };
 
+  const handleBoxesChange = (newBoxes: any[]) => {
+    setBoxes(newBoxes);
+  };
+
+  const handleFindModel = async () => {
+    if (!image) return;
+
+    setIsLoading(true);
+    try {
+      // Remove the data:image/jpeg;base64, prefix if present
+      const base64Data = image.includes(",") ? image.split(",")[1] : image;
+
+      const response = await fetch("/api/infer", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          image: base64Data,
+        }),
+      });
+
+      const data = await response.json();
+      console.log("Model inference result:", data);
+    } catch (error) {
+      console.error("Error finding model:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const canFindModel = image && prompt && boxes.length > 0;
+
+  console.log("\n\nCan find model\n\n");
+  console.log(canFindModel);
+
   return (
     <div className="flex flex-col h-full bg-gray-950 text-white">
       <div className="flex-1 flex overflow-hidden">
@@ -76,6 +115,15 @@ export default function UniverseExplorer() {
                 availableClasses={classes}
                 onClassSelect={handleClassSelect}
                 classColors={classColors}
+                onBoxesChange={handleBoxesChange}
+              />
+            )}
+
+            {/* Find Model Button */}
+            {canFindModel && (
+              <FindModelButton
+                onClick={handleFindModel}
+                isLoading={isLoading}
               />
             )}
           </div>
