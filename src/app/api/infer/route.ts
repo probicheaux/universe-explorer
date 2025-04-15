@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { searchTopObjectDetectionTrainedDatasets } from "@/adapters/elasticAdapter";
 import { getAndCache } from "@/utils/cache";
 import { inferImage } from "@/adapters/roboflowAdapter";
+import async from "async";
+import { ModelInfo } from "@/utils/api/inference";
 
 // Helper function to create a stream message
 function createStreamMessage(event: string, data: any) {
@@ -80,7 +82,7 @@ export async function POST(request: NextRequest) {
       );
 
       // Get top 10 models
-      const topModels = datasets.hits.hits.slice(0, 10).map((hit: any) => ({
+      const topModels = datasets.hits.hits.slice(0, 100).map((hit: any) => ({
         id: `${hit._source.url}/${hit._source.latestVersion}`,
         datasetId: hit._source.dataset_id,
         icon: hit._source.icon,
@@ -102,8 +104,10 @@ export async function POST(request: NextRequest) {
         encoder.encode(createStreamMessage("models", { models: topModels }))
       );
 
-      // Run inferences in parallel
-      const inferencePromises = topModels.map(async (model) => {
+      // Process inferences in batches with controlled concurrency
+      const BATCH_SIZE = 10; // Process 10 models at a time
+
+      await async.eachLimit(topModels, BATCH_SIZE, async (model: ModelInfo) => {
         try {
           const modelUrl = `${model.url}/${model.version}`;
           const result = await inferImage(modelUrl, image);
@@ -135,9 +139,6 @@ export async function POST(request: NextRequest) {
           return { modelId: model.id, success: false, error };
         }
       });
-
-      // Wait for all inferences to complete
-      await Promise.all(inferencePromises);
 
       // Send completion message
       await writer.write(
