@@ -55,8 +55,16 @@ export default function UniverseExplorer() {
     setImage(imageData);
   };
 
-  const handlePromptChange = (newPrompt: string) => {
+  const handlePromptChange = async (newPrompt: string) => {
     setPrompt(newPrompt);
+
+    const response = await api.prompt.send(newPrompt);
+    if (response.error) {
+      console.error("Error from prompt API:", response.error);
+      return;
+    }
+
+    console.log("Response from assistant:", response.data?.message);
   };
 
   const handleClassSelect = (className: string) => {
