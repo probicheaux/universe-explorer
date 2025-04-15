@@ -2,6 +2,7 @@ import React, { useMemo, useEffect, useCallback } from "react";
 import { ModelInfo } from "@/utils/api/inference";
 import { calculateBoxOverlap } from "@/utils/boxOverlap";
 import { InferImageResponse } from "@/adapters/roboflowAdapter";
+import { FixedSizeList as List } from "react-window";
 
 interface ModelsToolbarProps {
   models: ModelInfo[];
@@ -255,46 +256,62 @@ function ModelsToolbar({
     }
   }, [sortedModels, onModelSelect]);
 
-  // Memoize the model cards list to prevent unnecessary recalculation
-  const modelCards = useMemo(() => {
-    return sortedModels.map((model) => (
-      <ModelCard
-        key={model.id}
-        model={model}
-        result={results[model.id]}
-        onSelect={onModelSelect || (() => {})}
-        boxOverlap={
-          imageDimensions
-            ? calculateBoxOverlap(drawnBoxes, results[model.id], scale, offset)
-            : 0
-        }
-      />
-    ));
-  }, [
-    sortedModels,
-    results,
-    onModelSelect,
-    drawnBoxes,
-    imageDimensions,
-    scale,
-    offset,
-  ]);
+  // Memoize the row renderer to prevent unnecessary re-renders
+  const Row = useCallback(
+    ({ index, style }: { index: number; style: React.CSSProperties }) => {
+      const model = sortedModels[index];
+      return (
+        <div style={style}>
+          <ModelCard
+            model={model}
+            result={results[model.id]}
+            onSelect={onModelSelect || (() => {})}
+            boxOverlap={
+              imageDimensions
+                ? calculateBoxOverlap(
+                    drawnBoxes,
+                    results[model.id],
+                    scale,
+                    offset
+                  )
+                : 0
+            }
+          />
+        </div>
+      );
+    },
+    [
+      sortedModels,
+      results,
+      onModelSelect,
+      drawnBoxes,
+      imageDimensions,
+      scale,
+      offset,
+    ]
+  );
 
   return (
-    <div className="w-full h-full bg-gray-900/80 backdrop-blur-md rounded-l-lg p-4 border border-gray-800 shadow-lg">
+    <div className="w-full h-full bg-gray-900/80 backdrop-blur-md rounded-l-lg p-4 border border-gray-800 shadow-lg flex flex-col">
       <h2 className="text-sm font-medium text-gray-400 mb-4">
         Available Models
       </h2>
-      <div className="flex-1 overflow-y-auto">
-        <div className="space-y-3">
-          {isLoading && models.length === 0 ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400"></div>
-            </div>
-          ) : (
-            modelCards
-          )}
-        </div>
+      <div className="flex-1 overflow-hidden">
+        {isLoading && models.length === 0 ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400"></div>
+          </div>
+        ) : (
+          <List
+            height={window.innerHeight - 200} // Adjust this value based on your layout
+            width="100%"
+            itemCount={sortedModels.length}
+            itemSize={200} // Adjust this value based on your ModelCard height
+            className="scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900"
+          >
+            {Row}
+          </List>
+        )}
       </div>
       <div className="mt-4 pt-4 border-t border-gray-700">
         <div className="flex items-center gap-2 text-xs text-gray-400">
