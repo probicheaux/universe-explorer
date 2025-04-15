@@ -29,12 +29,14 @@ const ModelCard = React.memo(
     onSelect,
     boxOverlap,
     isSelected,
+    isBestMatch,
   }: {
     model: ModelInfo;
     result: InferImageResponse | undefined;
     onSelect: (modelId: string) => void;
     boxOverlap: number;
     isSelected?: boolean;
+    isBestMatch?: boolean;
   }) => {
     console.log("ModelCard props:", {
       modelId: model.id,
@@ -69,13 +71,18 @@ const ModelCard = React.memo(
 
     return (
       <div
-        className={`group h-[220px] flex flex-col rounded-md border transition-all cursor-pointer overflow-visible ${
+        className={`group h-[220px] flex flex-col rounded-md border transition-all cursor-pointer overflow-visible relative ${
           isSelected
             ? "bg-blue-900/30 border-blue-500/50 shadow-lg shadow-blue-500/20"
             : "bg-gray-800/50 border-gray-700 hover:bg-gray-700/50"
         }`}
         onClick={handleClick}
       >
+        {isBestMatch && (
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-purple-900/80 text-purple-400 text-[10px] font-medium whitespace-nowrap shadow-lg">
+            Best match
+          </div>
+        )}
         <div className="flex flex-col gap-2 p-3 h-full overflow-visible">
           {/* Header with model name and status */}
           <div className="flex justify-between items-center">
@@ -318,13 +325,9 @@ function ModelsToolbar({
       const model = sortedModels[index];
       const modelResult = results[model.id];
       const isSelected = selectedModel === model.id;
-      console.log("ModelCard render:", {
-        modelId: model.id,
-        selectedModel,
-        isSelected,
-      });
+      const isBestMatch = index === 0;
       return (
-        <div style={{ ...style, paddingBottom: "12px" }}>
+        <div style={{ ...style, paddingBottom: "12px", paddingTop: "12px" }}>
           <ModelCard
             model={model}
             result={modelResult}
@@ -335,6 +338,7 @@ function ModelsToolbar({
                 : 0
             }
             isSelected={isSelected}
+            isBestMatch={isBestMatch}
           />
         </div>
       );
