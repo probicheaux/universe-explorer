@@ -1,6 +1,7 @@
 import React from "react";
 import { getColorForLabel } from "@/utils/colors";
 import { InferImageResponse } from "@/adapters/roboflowAdapter";
+import BoundingBox from "./BoundingBox";
 
 interface ResultsCanvasProps {
   results: InferImageResponse[];
@@ -16,25 +17,19 @@ export default function ResultsCanvas({ results = [] }: ResultsCanvasProps) {
       {boxesToDisplay.map((box, index) => {
         const color = getColorForLabel(box.class);
         return (
-          <div
+          <BoundingBox
             key={index}
-            className="absolute border-2 rounded-md"
-            style={{
-              left: `${box.x}px`,
-              top: `${box.y}px`,
-              width: `${box.width}px`,
-              height: `${box.height}px`,
-              borderColor: color,
-              backgroundColor: `${color}33`,
-            }}
-          >
-            <div
-              className="absolute -top-6 left-0 px-2 py-1 text-xs font-medium rounded-t-md"
-              style={{ backgroundColor: color }}
-            >
-              {box.class} ({(box.confidence * 100).toFixed(0)}%)
-            </div>
-          </div>
+            start={{ x: box.x, y: box.y }}
+            end={{ x: box.x + box.width, y: box.y + box.height }}
+            label={`${box.class} (${(box.confidence * 100).toFixed(0)}%)`}
+            color={color}
+            isSelected={false}
+            onHover={undefined}
+            onClick={undefined}
+            onResizeStart={undefined}
+            onMoveStart={undefined}
+            onMenuOpen={undefined}
+          />
         );
       })}
     </div>

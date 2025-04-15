@@ -1,4 +1,5 @@
 import { memo, useState } from "react";
+import { cn } from "@/utils/cn";
 
 interface Point {
   x: number;
@@ -66,9 +67,11 @@ function BoundingBox({
 
   return (
     <div
-      className={`absolute group rounded-md ${
-        isSelected ? "z-20 cursor-grab active:cursor-grabbing" : "z-10"
-      } cursor-pointer`}
+      className={cn(
+        "absolute group rounded-md",
+        isSelected ? "z-20 cursor-grab active:cursor-grabbing" : "z-10",
+        onHover && "cursor-pointer"
+      )}
       style={{
         left,
         top,
@@ -85,10 +88,12 @@ function BoundingBox({
     >
       {/* Label */}
       <div
-        className="absolute -top-6 left-0 px-2 py-1 rounded-t-md text-xs font-medium whitespace-nowrap"
+        className={cn(
+          "absolute -top-6 left-0 px-2 py-1 rounded-t-md text-xs font-medium whitespace-nowrap",
+          "text-white"
+        )}
         style={{
           backgroundColor: color,
-          color: "#fff",
         }}
       >
         {label}
@@ -96,9 +101,11 @@ function BoundingBox({
 
       {/* Three Dots Menu Button */}
       <div
-        className={`absolute -top-6 right-0 w-6 h-6 flex items-center justify-center rounded-t-md text-white opacity-0 group-hover:opacity-100 transition-opacity duration-150 ${
-          isMenuHovered ? "opacity-100" : ""
-        }`}
+        className={cn(
+          "absolute -top-6 right-0 w-6 h-6 flex items-center justify-center rounded-t-md text-white",
+          "opacity-0 transition-opacity duration-150",
+          onHover && isMenuHovered && "group-hover:opacity-100 opacity-100"
+        )}
         style={{
           backgroundColor: color,
         }}
@@ -130,13 +137,21 @@ function BoundingBox({
 
       {/* Hover Indicator */}
       {!isSelected && (
-        <div className="absolute inset-0 border-2 border-dashed border-white/50 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
+        <div
+          className={cn(
+            "absolute inset-0 opacity-0 transition-opacity duration-150",
+            onHover && "group-hover:opacity-100"
+          )}
+        />
       )}
 
       {/* Hover Background */}
       {!isSelected && (
         <div
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+          className={cn(
+            "absolute inset-0 opacity-0 transition-opacity duration-150",
+            onHover && "group-hover:opacity-100"
+          )}
           style={{
             backgroundColor: `${color}22`,
           }}
