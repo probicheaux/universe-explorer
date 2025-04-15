@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import ImageArea from "./ImageArea";
 import PromptArea from "./PromptArea";
 import AnnotationToolbar, { TaskType } from "./AnnotationToolbar";
@@ -197,13 +197,22 @@ export default function UniverseExplorer() {
     }
   };
 
-  const handleModelSelect = (modelId: string) => {
-    // Update the results canvas to show the selected model's results
-    const selectedResult = inferenceResults[modelId];
-    if (selectedResult && !selectedResult.error) {
-      setInferenceResults({ [modelId]: selectedResult });
-    }
-  };
+  const handleModelSelect = useCallback(
+    (modelId: string) => {
+      // Update the results canvas to show the selected model's results
+      const selectedResult = inferenceResults[modelId];
+      if (selectedResult && !selectedResult.error) {
+        setInferenceResults((prev) => {
+          // Only update if the results have actually changed
+          if (prev[modelId] === selectedResult) {
+            return prev;
+          }
+          return { [modelId]: selectedResult };
+        });
+      }
+    },
+    [inferenceResults]
+  );
 
   const canFindModel = image && prompt && boxes.length > 0;
 
