@@ -17,6 +17,7 @@ export default function PromptArea({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Handle click outside to close the editor
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       // Check if the click is on a suggestion
@@ -115,10 +116,6 @@ export default function PromptArea({
           <PromptInput
             ref={inputRef}
             onComplete={handlePromptChange}
-            onBlur={() => {
-              console.log("PromptArea: onBlur called");
-              setIsEditing(false);
-            }}
             initialValue={prompt}
           />
         </div>
