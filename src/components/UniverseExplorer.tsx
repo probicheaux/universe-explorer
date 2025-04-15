@@ -151,53 +151,80 @@ export default function UniverseExplorer() {
     setBoxes(newBoxes);
   };
 
-  const handleFindModel = async () => {
+  const handleFindModel = async (): Promise<void> => {
     if (!image) return;
 
     setIsLoading(true);
     setInferenceResults({});
     setModels([]);
-    setSelectedModel(null); // Reset selected model when starting new inference
+    setSelectedModel(null);
 
     try {
-      // Remove the data:image/jpeg;base64, prefix if present
       const base64Data = image.includes(",") ? image.split(",")[1] : image;
 
-      // Cleanup previous EventSource if exists
       if (cleanupRef.current) {
         cleanupRef.current();
       }
 
-      // Start streaming inference
+      let currentModels: ModelInfo[] = [];
+      let pendingResults: { result: any; index: number }[] = [];
+
       const cleanup = api.inference.inferImage(base64Data, {
         onModels: (newModels) => {
+          console.log("Received models:", newModels);
+          currentModels = newModels;
           setModels(newModels);
-          // Switch to results tab after receiving models
           setActiveTab("results");
-          // Select the first model by default if available
+
           if (newModels.length > 0) {
             setSelectedModel(newModels[0].id);
           }
+
+          // Process any pending results
+          pendingResults.forEach(({ result, index }) => {
+            if (index < newModels.length) {
+              const modelId = newModels[index].id;
+              setInferenceResults((prev) => ({
+                ...prev,
+                [modelId]: result,
+              }));
+            }
+          });
+          pendingResults = [];
         },
         onInference: (modelId, result) => {
+          console.log("Received inference result for model:", modelId, result);
+
           if (!modelId) {
-            console.warn("Received inference result without modelId");
-            return;
+            // Store the result temporarily if we don't have models yet
+            if (currentModels.length === 0) {
+              pendingResults.push({ result, index: pendingResults.length });
+            } else {
+              // Find the first model without results
+              const modelIndex = currentModels.findIndex(
+                (m) => !inferenceResults[m.id]
+              );
+              if (modelIndex !== -1) {
+                const fallbackModelId = currentModels[modelIndex].id;
+                console.log("Using fallback modelId:", fallbackModelId);
+                setInferenceResults((prev) => ({
+                  ...prev,
+                  [fallbackModelId]: result,
+                }));
+              }
+            }
+          } else {
+            setInferenceResults((prev) => ({
+              ...prev,
+              [modelId]: result,
+            }));
           }
-          setInferenceResults((prev) => ({
-            ...prev,
-            [modelId]: result,
-          }));
         },
         onError: (modelId, error) => {
-          const errorModelId = modelId || "unknown";
-          console.error(`Error with model ${errorModelId}:`, error);
-          setInferenceResults((prev) => ({
-            ...prev,
-            [errorModelId]: { error },
-          }));
+          console.error(`Error with model ${modelId}:`, error);
         },
         onComplete: () => {
+          console.log("Inference complete");
           setIsLoading(false);
         },
       });

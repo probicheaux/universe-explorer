@@ -103,6 +103,7 @@ export const inferImage = (
 
               try {
                 const parsedData = JSON.parse(data);
+                console.log(`Received SSE event: ${event}`, parsedData);
 
                 // Handle different event types
                 switch (event) {
@@ -110,6 +111,12 @@ export const inferImage = (
                     callbacks.onModels?.(parsedData.models);
                     break;
                   case "inference":
+                    if (!parsedData.modelId) {
+                      console.warn(
+                        "Inference event missing modelId:",
+                        parsedData
+                      );
+                    }
                     callbacks.onInference?.(
                       parsedData.modelId,
                       parsedData.result
@@ -123,7 +130,7 @@ export const inferImage = (
                     break;
                 }
               } catch (e) {
-                console.error("Error parsing SSE data:", e);
+                console.error("Error parsing SSE data:", e, data);
               }
             }
           }
@@ -136,12 +143,22 @@ export const inferImage = (
 
             try {
               const parsedData = JSON.parse(data);
+              console.log(
+                `Processing remaining buffer - SSE event: ${event}`,
+                parsedData
+              );
 
               switch (event) {
                 case "models":
                   callbacks.onModels?.(parsedData.models);
                   break;
                 case "inference":
+                  if (!parsedData.modelId) {
+                    console.warn(
+                      "Inference event missing modelId:",
+                      parsedData
+                    );
+                  }
                   callbacks.onInference?.(
                     parsedData.modelId,
                     parsedData.result
@@ -155,7 +172,7 @@ export const inferImage = (
                   break;
               }
             } catch (e) {
-              console.error("Error parsing SSE data:", e);
+              console.error("Error parsing SSE data from buffer:", e, data);
             }
           }
         } catch (error) {

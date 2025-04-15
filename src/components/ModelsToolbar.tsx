@@ -29,7 +29,7 @@ const ModelCard = React.memo(
     boxOverlap,
   }: {
     model: ModelInfo;
-    result: InferImageResponse;
+    result: InferImageResponse | undefined;
     onSelect: (modelId: string) => void;
     boxOverlap: number;
   }) => {
@@ -292,20 +292,16 @@ function ModelsToolbar({
   const Row = useCallback(
     ({ index, style }: { index: number; style: React.CSSProperties }) => {
       const model = sortedModels[index];
+      const modelResult = results[model.id];
       return (
         <div style={{ ...style, paddingBottom: "12px" }}>
           <ModelCard
             model={model}
-            result={results[model.id]}
+            result={modelResult}
             onSelect={onModelSelect || (() => {})}
             boxOverlap={
               imageDimensions
-                ? calculateBoxOverlap(
-                    drawnBoxes,
-                    results[model.id],
-                    scale,
-                    offset
-                  )
+                ? calculateBoxOverlap(drawnBoxes, modelResult, scale, offset)
                 : 0
             }
           />

@@ -81,7 +81,8 @@ export async function POST(request: NextRequest) {
 
       // Get top 10 models
       const topModels = datasets.hits.hits.slice(0, 10).map((hit: any) => ({
-        id: hit.dataset_id,
+        id: `${hit._source.url}/${hit._source.latestVersion}`,
+        datasetId: hit._source.dataset_id,
         icon: hit._source.icon,
         images: hit._source.images,
         universe: hit._source.universe,
