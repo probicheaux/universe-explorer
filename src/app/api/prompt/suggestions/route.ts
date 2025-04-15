@@ -1,91 +1,67 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import Fuse from "fuse.js";
 import {
   getPromptSuggestions,
   PromptSuggestion,
 } from "@/adapters/redisAdapter";
-import Fuse, { FuseResult } from "fuse.js";
-
-interface CacheResult {
-  fuse: Fuse<PromptSuggestion>;
-  prompts: PromptSuggestion[];
-}
 
 // Cache the Fuse instance
 let fuseInstance: Fuse<PromptSuggestion> | null = null;
-let lastCacheUpdate = 0;
-const CACHE_TTL = 60000; // 1 minute
+let lastSuggestionsUpdate: number = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-async function updateFuseCache(): Promise<CacheResult> {
+// Function to get or create the Fuse instance
+const getFuseInstance = async (): Promise<Fuse<PromptSuggestion>> => {
   const now = Date.now();
-  if (fuseInstance && now - lastCacheUpdate < CACHE_TTL) {
+
+  // If we have a cached instance and it's not expired, return it
+  if (fuseInstance && now - lastSuggestionsUpdate < CACHE_TTL) {
     console.log("Using cached Fuse instance");
-    return { fuse: fuseInstance, prompts: [] }; // We don't need prompts for cached instance
+    return fuseInstance;
   }
 
-  console.log("Fetching prompts from Redis");
-  const prompts = await getPromptSuggestions();
-  console.log(`Found ${prompts.length} prompts in Redis`);
+  // Otherwise, create a new instance
+  console.log("Creating new Fuse instance");
+  const suggestions = await getPromptSuggestions();
 
-  if (prompts.length > 0) {
-    console.log(
-      "Sample prompts:",
-      prompts.slice(0, 3).map((p) => p.text)
-    );
-  }
-
-  fuseInstance = new Fuse(prompts, {
+  fuseInstance = new Fuse(suggestions, {
     keys: ["text"],
     threshold: 0.4,
-    includeScore: true,
     minMatchCharLength: 1,
-    useExtendedSearch: true,
     ignoreLocation: true,
+    useExtendedSearch: true,
   });
 
-  lastCacheUpdate = now;
-  return { fuse: fuseInstance, prompts };
-}
+  lastSuggestionsUpdate = now;
+  return fuseInstance;
+};
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const query = searchParams.get("q");
-    console.log(`Search query: "${query}"`);
+    const searchParams = request.nextUrl.searchParams;
+    const query = searchParams.get("q") || "";
 
-    if (!query) {
-      // Return most recent prompts if no query
-      console.log("No query provided, returning most recent prompts");
-      const { prompts } = await updateFuseCache();
-      const results = prompts.slice(0, 5);
-      console.log(`Returning ${results.length} recent prompts`);
-      return NextResponse.json(results);
+    console.log(`Searching for prompts matching: "${query}"`);
+
+    // Get the cached or new Fuse instance
+    const fuse = await getFuseInstance();
+
+    // If query is empty, return empty array
+    if (!query.trim()) {
+      console.log("Empty query, returning empty array");
+      return NextResponse.json([]);
     }
 
-    // Get cached Fuse instance and search
-    console.log("Searching for matches");
-    const { fuse } = await updateFuseCache();
+    // Search for matches
     const results = fuse.search(query);
     console.log(`Found ${results.length} matches for "${query}"`);
 
-    if (results.length > 0) {
-      console.log(
-        "Top matches:",
-        results.slice(0, 3).map((r) => ({
-          text: r.item.text,
-          score: r.score,
-        }))
-      );
-    }
-
-    return NextResponse.json(
-      results
-        .slice(0, 5)
-        .map((result: FuseResult<PromptSuggestion>) => result.item)
-    );
+    // Return the matched suggestions
+    return NextResponse.json(results.map((result) => result.item));
   } catch (error) {
-    console.error("Error fetching prompt suggestions:", error);
+    console.error("Error in suggestions route:", error);
     return NextResponse.json(
-      { error: "Failed to fetch suggestions" },
+      { error: "Failed to get suggestions" },
       { status: 500 }
     );
   }
