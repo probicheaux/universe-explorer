@@ -110,9 +110,6 @@ export default function PromptArea({
               : "opacity-0 transform -translate-y-2 pointer-events-none"
           }`}
           style={{ zIndex: isEditing ? 10 : "auto" }}
-          onClick={(e) => {
-            // Don't stop propagation here to allow the click to reach the suggestions
-          }}
         >
           <PromptInput
             ref={inputRef}
