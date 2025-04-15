@@ -81,23 +81,26 @@ export async function POST(request: NextRequest) {
         60 * 60 * 24 * 30 // 30 days
       );
 
-      // Get top 10 models
-      const topModels = datasets.hits.hits.slice(0, 100).map((hit: any) => ({
-        id: `${hit._source.url}/${hit._source.latestVersion}`,
-        datasetId: hit._source.dataset_id,
-        icon: hit._source.icon,
-        images: hit._source.images,
-        universe: hit._source.universe,
-        universeStats: hit._source.universeStats,
-        classCounts: hit._source.class_counts,
-        bestModelScore: hit._source.bestModelScore,
-        type: hit._source.type,
-        annotation: hit._source.annotation,
-        url: hit._source.url,
-        version: hit._source.latestVersion,
-        name: hit._source.name || "Unknown Model",
-        description: hit._source.description || "",
-      }));
+      // Get top models
+      const MODELS_LIMIT = 1000;
+      const topModels = datasets.hits.hits
+        .slice(0, MODELS_LIMIT)
+        .map((hit: any) => ({
+          id: `${hit._source.url}/${hit._source.latestVersion}`,
+          datasetId: hit._source.dataset_id,
+          icon: hit._source.icon,
+          images: hit._source.images,
+          universe: hit._source.universe,
+          universeStats: hit._source.universeStats,
+          classCounts: hit._source.class_counts,
+          bestModelScore: hit._source.bestModelScore,
+          type: hit._source.type,
+          annotation: hit._source.annotation,
+          url: hit._source.url,
+          version: hit._source.latestVersion,
+          name: hit._source.name || "Unknown Model",
+          description: hit._source.description || "",
+        }));
 
       // Send models data first
       await writer.write(
@@ -110,7 +113,7 @@ export async function POST(request: NextRequest) {
       );
 
       // Process inferences in batches with controlled concurrency
-      const BATCH_SIZE = 10; // Process 10 models at a time
+      const BATCH_SIZE = 50; // Process 50 models at a time
 
       await async.eachLimit(topModels, BATCH_SIZE, async (model: ModelInfo) => {
         try {
