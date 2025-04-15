@@ -135,7 +135,6 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
               className="absolute z-50 w-full bottom-full mb-2 bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-lg shadow-xl overflow-hidden transition-all duration-200 ease-in-out suggestions-dropdown"
               style={{ boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)" }}
               onClick={(e) => {
-                console.log("Suggestions container clicked");
                 // Don't stop propagation here to allow the click to reach the li elements
               }}
             >
@@ -154,10 +153,6 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
                           : "text-gray-300 hover:bg-gray-800/50"
                       }`}
                       onClick={(e) => {
-                        console.log(
-                          "Suggestion item clicked directly:",
-                          suggestion
-                        );
                         e.preventDefault();
                         e.stopPropagation();
 
