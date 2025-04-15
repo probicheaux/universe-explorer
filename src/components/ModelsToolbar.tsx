@@ -63,10 +63,10 @@ const ModelCard = React.memo(
       >
         {/* Header with model name and status */}
         <div className="flex justify-between items-center">
-          <span className="text-sm font-medium text-gray-200">
+          <span className="text-sm font-medium text-gray-200 truncate flex-1 mr-2">
             {model.name}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {hasError ? (
               <span className="text-xs px-1.5 py-0.5 rounded bg-red-900/50 text-red-400">
                 Failed
@@ -93,13 +93,13 @@ const ModelCard = React.memo(
         )}
 
         {/* Model type badge */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {model.bestModelScore && (
             <div className="group relative">
               <span className="text-xs px-1.5 py-0.5 rounded bg-purple-900/50 text-purple-400">
                 mAP@50: {model.bestModelScore.toFixed(1)}%
               </span>
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-xs text-gray-300 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-xs text-gray-300 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                 Mean Average Precision at 50% IoU threshold for the best model
               </div>
             </div>
@@ -108,7 +108,7 @@ const ModelCard = React.memo(
 
         {/* Top classes */}
         {topClasses.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1">
+          <div className="flex flex-wrap gap-1">
             {topClasses.map((cls, index) => (
               <span
                 key={index}
@@ -126,7 +126,7 @@ const ModelCard = React.memo(
         )}
 
         {/* Model stats */}
-        <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
+        <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-400">
           {model.universeStats && (
             <>
               <div className="flex items-center gap-1">
@@ -196,18 +196,20 @@ const ModelCard = React.memo(
 
         {/* Results info */}
         {isComplete && result.predictions && (
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-700">
-            <div className="flex items-center gap-2">
-              <div className="text-xs text-gray-400">
-                {result.predictions.length} detection
-                {result.predictions.length !== 1 ? "s" : ""}
+          <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-gray-700">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="text-xs text-gray-400 whitespace-nowrap">
+                  {result.predictions.length} detection
+                  {result.predictions.length !== 1 ? "s" : ""}
+                </div>
+                <div className="text-xs text-gray-400 whitespace-nowrap">
+                  {(result.time * 1000).toFixed(0)}ms
+                </div>
               </div>
-              <div className="text-xs text-gray-400">
-                {(result.time * 1000).toFixed(0)}ms
+              <div className="text-xs font-medium px-2 py-0.5 rounded bg-blue-900/50 text-blue-400 whitespace-nowrap ml-2 flex-shrink-0">
+                {boxOverlap.toFixed(1)}% match
               </div>
-            </div>
-            <div className="text-xs font-medium px-2 py-0.5 rounded bg-blue-900/50 text-blue-400">
-              {boxOverlap.toFixed(1)}% match
             </div>
           </div>
         )}
@@ -261,7 +263,7 @@ function ModelsToolbar({
     ({ index, style }: { index: number; style: React.CSSProperties }) => {
       const model = sortedModels[index];
       return (
-        <div style={style}>
+        <div style={{ ...style, paddingBottom: "8px" }}>
           <ModelCard
             model={model}
             result={results[model.id]}
@@ -303,11 +305,11 @@ function ModelsToolbar({
           </div>
         ) : (
           <List
-            height={window.innerHeight - 200} // Adjust this value based on your layout
+            height={window.innerHeight - 200}
             width="100%"
             itemCount={sortedModels.length}
-            itemSize={200} // Adjust this value based on your ModelCard height
-            className="scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900"
+            itemSize={240}
+            className="[&::-webkit-scrollbar]:hidden [&::-webkit-scrollbar]:w-0 [&::-webkit-scrollbar]:h-0"
           >
             {Row}
           </List>
