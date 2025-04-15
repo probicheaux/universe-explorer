@@ -28,6 +28,7 @@ export default function UniverseExplorer() {
   );
   const [hideGuides, setHideGuides] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const [userSelectedModel, setUserSelectedModel] = useState<boolean>(false);
   const [imageDimensions, setImageDimensions] = useState<
     | {
         width: number;
@@ -158,6 +159,7 @@ export default function UniverseExplorer() {
     setInferenceResults({});
     setModels([]);
     setSelectedModel(null);
+    setUserSelectedModel(false);
 
     try {
       const base64Data = image.includes(",") ? image.split(",")[1] : image;
@@ -245,6 +247,9 @@ export default function UniverseExplorer() {
 
       console.log("handleModelSelect called with modelId:", modelId);
 
+      // Mark that the user has manually selected a model
+      setUserSelectedModel(true);
+
       // Immediately update the selected model
       setSelectedModel(modelId);
 
@@ -289,6 +294,13 @@ export default function UniverseExplorer() {
     console.log("activeTab changed to:", activeTab);
   }, [activeTab]);
 
+  // Select the first model by default when the order changes, but only if user hasn't manually selected
+  useEffect(() => {
+    if (models.length > 0 && !userSelectedModel) {
+      setSelectedModel(models[0].id);
+    }
+  }, [models, userSelectedModel]);
+
   return (
     <div className="flex flex-col h-full bg-gray-950 text-white relative">
       <div className="flex-1 flex overflow-hidden relative">
@@ -328,6 +340,7 @@ export default function UniverseExplorer() {
                 scale={scale}
                 offset={offset}
                 selectedModel={selectedModel ?? undefined}
+                autoSelectFirstModel={!userSelectedModel}
               />
             )}
           </div>

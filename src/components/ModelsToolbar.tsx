@@ -19,6 +19,7 @@ interface ModelsToolbarProps {
   scale: { x: number; y: number };
   offset: { x: number; y: number };
   selectedModel?: string | undefined;
+  autoSelectFirstModel?: boolean;
 }
 
 // Memoize the individual model card to prevent unnecessary re-renders
@@ -284,6 +285,7 @@ function ModelsToolbar({
   scale,
   offset,
   selectedModel,
+  autoSelectFirstModel = false,
 }: ModelsToolbarProps) {
   // Filter out models with errors and calculate match percentages
   const sortedModels = useMemo(() => {
@@ -312,12 +314,12 @@ function ModelsToolbar({
     });
   }, [models, results, drawnBoxes, imageDimensions, scale, offset]);
 
-  // Select the first model by default when the order changes
+  // Select the first model by default when no model is selected
   useEffect(() => {
-    if (sortedModels.length > 0 && onModelSelect) {
+    if (sortedModels.length > 0 && autoSelectFirstModel && onModelSelect) {
       onModelSelect(sortedModels[0].id);
     }
-  }, [sortedModels, onModelSelect]);
+  }, [sortedModels, autoSelectFirstModel, onModelSelect]);
 
   // Memoize the row renderer to prevent unnecessary re-renders
   const Row = useCallback(
