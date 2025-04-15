@@ -22,6 +22,12 @@ export default function ResultsCanvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState({ x: 1, y: 1 });
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [containerDimensions, setContainerDimensions] = useState({
+    width: 0,
+    height: 0,
+    x: 0,
+    y: 0,
+  });
 
   // For now, we'll use hardcoded boxes for demonstration
   console.log("results on canvas", results);
@@ -42,38 +48,31 @@ export default function ResultsCanvas({
     img.onload = () => {
       const imgWidth = img.width;
       const imgHeight = img.height;
-      console.log("Original image dimensions:", {
-        width: imgWidth,
-        height: imgHeight,
-      });
 
-      // Get the container dimensions
-      const containerRect = containerRef.current!.getBoundingClientRect();
-
-      console.log("Container dimensions:", {
-        width: containerRect.width,
-        height: containerRect.height,
-        left: containerRect.left,
-        top: containerRect.top,
-      });
-
-      console.log("Rendered image dimensions:", imageDimensions);
-
-      // Calculate scale factors based on the actual rendered image size
+      // Calculate scale factors based on the rendered image size
       const scaleX = imageDimensions.width / imgWidth;
       const scaleY = imageDimensions.height / imgHeight;
 
-      console.log("Scale calculation:", {
-        scaleX: `${imageDimensions.width} / ${imgWidth} = ${scaleX}`,
-        scaleY: `${imageDimensions.height} / ${imgHeight} = ${scaleY}`,
+      // Get the container's dimensions
+      if (!containerRef.current) return;
+      const containerRect = containerRef.current.getBoundingClientRect();
+
+      // Calculate container position based on it being centered with the image
+      const containerX =
+        imageDimensions.x + (imageDimensions.width - containerRect.width) / 2;
+      const containerY =
+        imageDimensions.y + (imageDimensions.height - containerRect.height) / 2;
+
+      setContainerDimensions({
+        width: containerRect.width,
+        height: containerRect.height,
+        x: containerX,
+        y: containerY,
       });
 
-      // The imageDimensions x and y are already relative to the container
-      // so we don't need to subtract containerRect.left/top
+      // Calculate offset relative to the container
       const offsetX = imageDimensions.x;
       const offsetY = imageDimensions.y;
-
-      console.log("Offset:", { x: offsetX, y: offsetY });
 
       setScale({ x: scaleX, y: scaleY });
       setOffset({ x: offsetX, y: offsetY });
@@ -107,31 +106,56 @@ export default function ResultsCanvas({
 
   return (
     <div ref={containerRef} className="absolute inset-0 z-10">
+      {/* Debug box to visualize reported dimensions */}
+      {imageDimensions && (
+        <div
+          style={{
+            position: "absolute",
+            left: imageDimensions.x,
+            top: imageDimensions.y,
+            width: imageDimensions.width,
+            height: imageDimensions.height,
+            border: "2px solid red",
+            pointerEvents: "none",
+          }}
+        />
+      )}
+      {/* Debug box to visualize container dimensions */}
+      {containerRef.current && (
+        <div
+          style={{
+            position: "absolute",
+            left: containerDimensions.x,
+            top: containerDimensions.y,
+            width: containerDimensions.width,
+            height: containerDimensions.height,
+            border: "2px solid blue",
+            pointerEvents: "none",
+          }}
+        />
+      )}
+      {/* Debug offset point visualization   */}
+      <div
+        style={{
+          position: "absolute",
+          left: offset.x,
+          top: offset.y,
+          width: 10,
+          height: 10,
+          backgroundColor: "green",
+          pointerEvents: "none",
+        }}
+      />
       {boxesToDisplay.map((box, index) => {
         const color = getColorForLabel(box.class);
 
+        console.log("offset", offset);
+
         // Scale the coordinates and apply offset to match the rendered image position
-        const scaledX = box.x * scale.x + offset.x;
-        const scaledY = box.y * scale.y + offset.y;
+        const scaledX = (box.x - offset.x) * scale.x + offset.x;
+        const scaledY = (box.y - offset.y) * scale.y + offset.y;
         const scaledWidth = box.width * scale.x;
         const scaledHeight = box.height * scale.y;
-
-        console.log(`Box ${index} transformation:`, {
-          original: {
-            x: box.x,
-            y: box.y,
-            width: box.width,
-            height: box.height,
-          },
-          scale: scale,
-          offset: offset,
-          scaled: {
-            x: scaledX,
-            y: scaledY,
-            width: scaledWidth,
-            height: scaledHeight,
-          },
-        });
 
         return (
           <BoundingBox

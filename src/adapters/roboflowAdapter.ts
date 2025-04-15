@@ -32,9 +32,6 @@ export const inferImage = async (
     throw new Error("ROBOFLOW_API_KEY is not set");
   }
 
-  console.log("Using API key:", apiKey.substring(0, 5) + "...");
-  console.log("Request URL:", `${BASE_URL}${modelUrl}`);
-
   const response = await axios({
     method: "POST",
     url: `${BASE_URL}${modelUrl}`,

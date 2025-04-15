@@ -48,11 +48,6 @@ export default function UniverseExplorer() {
     }
   }, [classes, selectedClass]);
 
-  // Add effect to log image dimensions changes
-  useEffect(() => {
-    console.log("Image dimensions updated:", imageDimensions);
-  }, [imageDimensions]);
-
   const handleImageChange = (imageData: string) => {
     // Clear bounding boxes when image changes
     setBoxes([]);
@@ -140,7 +135,6 @@ export default function UniverseExplorer() {
               image={image}
               onImageChange={handleImageChange}
               onImageDimensionsChange={(dimensions) => {
-                console.log("ImageArea reported dimensions:", dimensions);
                 setImageDimensions(dimensions);
               }}
             />

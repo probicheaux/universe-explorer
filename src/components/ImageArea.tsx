@@ -95,35 +95,16 @@ export default function ImageArea({
             renderedWidth = renderedHeight * imageRatio;
           }
 
-          console.log("ImageArea position calculation:", {
-            containerRect: {
-              left: containerRect.left,
-              top: containerRect.top,
-              width: containerRect.width,
-              height: containerRect.height,
-            },
-            naturalSize: {
-              width: naturalWidth,
-              height: naturalHeight,
-            },
-            renderedSize: {
-              width: renderedWidth,
-              height: renderedHeight,
-            },
-          });
-
-          // Calculate position relative to container
-          const x = imgRect.left - containerRect.left;
-          const y = imgRect.top - containerRect.top;
+          // Calculate the starting position (black edge)
+          const x0 = Math.abs(containerRect.width - renderedWidth) / 2;
+          const y0 = Math.abs(containerRect.height - renderedHeight) / 2;
 
           const newDimensions = {
             width: renderedWidth,
             height: renderedHeight,
-            x,
-            y,
+            x: x0, // This is the starting position for the transformation
+            y: y0, // This is the starting position for the transformation
           };
-
-          console.log("ImageArea calculated dimensions:", newDimensions);
 
           // Only update if dimensions have changed
           if (
