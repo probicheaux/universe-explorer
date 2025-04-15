@@ -9,119 +9,146 @@ function createStreamMessage(event: string, data: any) {
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    // Check if request has a body
-    const contentType = request.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      return new Response(
-        JSON.stringify({ error: "Content-Type must be application/json" }),
-        { status: 400 }
-      );
-    }
+  // Create a TransformStream for SSE
+  const stream = new TransformStream();
+  const writer = stream.writable.getWriter();
+  const encoder = new TextEncoder();
 
-    let body;
+  // Start streaming response
+  const response = new Response(stream.readable, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+    },
+  });
+
+  // Process the request in the background
+  (async () => {
     try {
-      body = await request.json();
-    } catch (e) {
-      return new Response(
-        JSON.stringify({ error: "Invalid JSON in request body" }),
-        { status: 400 }
-      );
-    }
-
-    const { image } = body;
-
-    if (!image) {
-      return new Response(
-        JSON.stringify({ error: "No image provided in request body" }),
-        { status: 400 }
-      );
-    }
-
-    // Create a TransformStream for SSE
-    const stream = new TransformStream();
-    const writer = stream.writable.getWriter();
-    const encoder = new TextEncoder();
-
-    // Start streaming response
-    const response = new Response(stream.readable, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      },
-    });
-
-    // Get the dataset information
-    const datasets = await getAndCache(
-      "object-detection-datasets",
-      searchTopObjectDetectionTrainedDatasets,
-      60 * 60 * 24 * 30 // 30 days
-    );
-
-    // Get top 10 models
-    const topModels = datasets.hits.hits.slice(0, 10).map((hit: any) => ({
-      id: hit._id,
-      url: hit._source.url,
-      version: hit._source.latestVersion,
-      name: hit._source.name || "Unknown Model",
-      description: hit._source.description || "",
-    }));
-
-    // Send models data first
-    await writer.write(
-      encoder.encode(createStreamMessage("models", { models: topModels }))
-    );
-
-    // Run inferences in parallel
-    const inferencePromises = topModels.map(async (model) => {
-      try {
-        const modelUrl = `${model.url}/${model.version}`;
-        const result = await inferImage(modelUrl, image);
-
-        // Send each inference result as it completes
-        await writer.write(
-          encoder.encode(
-            createStreamMessage("inference", {
-              modelId: model.id,
-              result,
-            })
-          )
-        );
-
-        return { modelId: model.id, success: true, result };
-      } catch (error) {
-        console.error(`Error inferring with model ${model.id}:`, error);
-
-        // Send error for this specific model
+      // Check if request has a body
+      const contentType = request.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
         await writer.write(
           encoder.encode(
             createStreamMessage("error", {
-              modelId: model.id,
-              error: "Failed to process inference",
+              modelId: "request",
+              error: "Content-Type must be application/json",
             })
           )
         );
-
-        return { modelId: model.id, success: false, error };
+        await writer.close();
+        return;
       }
-    });
 
-    // Wait for all inferences to complete
-    await Promise.all(inferencePromises);
+      let body;
+      try {
+        body = await request.json();
+      } catch (e) {
+        await writer.write(
+          encoder.encode(
+            createStreamMessage("error", {
+              modelId: "request",
+              error: "Invalid JSON in request body",
+            })
+          )
+        );
+        await writer.close();
+        return;
+      }
 
-    // Send completion message
-    await writer.write(
-      encoder.encode(createStreamMessage("complete", { status: "done" }))
-    );
-    await writer.close();
+      const { image } = body;
 
-    return response;
-  } catch (error) {
-    console.error("Error processing inference request:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to process inference request" }),
-      { status: 500 }
-    );
-  }
+      if (!image) {
+        await writer.write(
+          encoder.encode(
+            createStreamMessage("error", {
+              modelId: "request",
+              error: "No image provided in request body",
+            })
+          )
+        );
+        await writer.close();
+        return;
+      }
+
+      // Get the dataset information
+      const datasets = await getAndCache(
+        "object-detection-datasets",
+        searchTopObjectDetectionTrainedDatasets,
+        60 * 60 * 24 * 30 // 30 days
+      );
+
+      // Get top 10 models
+      const topModels = datasets.hits.hits.slice(0, 10).map((hit: any) => ({
+        id: hit._id,
+        url: hit._source.url,
+        version: hit._source.latestVersion,
+        name: hit._source.name || "Unknown Model",
+        description: hit._source.description || "",
+      }));
+
+      // Send models data first
+      await writer.write(
+        encoder.encode(createStreamMessage("models", { models: topModels }))
+      );
+
+      // Run inferences in parallel
+      const inferencePromises = topModels.map(async (model) => {
+        try {
+          const modelUrl = `${model.url}/${model.version}`;
+          const result = await inferImage(modelUrl, image);
+
+          // Send each inference result as it completes
+          await writer.write(
+            encoder.encode(
+              createStreamMessage("inference", {
+                modelId: model.id,
+                result,
+              })
+            )
+          );
+
+          return { modelId: model.id, success: true, result };
+        } catch (error) {
+          console.error(`Error inferring with model ${model.id}:`, error);
+
+          // Send error for this specific model
+          await writer.write(
+            encoder.encode(
+              createStreamMessage("error", {
+                modelId: model.id,
+                error: "Failed to process inference",
+              })
+            )
+          );
+
+          return { modelId: model.id, success: false, error };
+        }
+      });
+
+      // Wait for all inferences to complete
+      await Promise.all(inferencePromises);
+
+      // Send completion message
+      await writer.write(
+        encoder.encode(createStreamMessage("complete", { status: "done" }))
+      );
+    } catch (error) {
+      console.error("Error processing inference request:", error);
+      await writer.write(
+        encoder.encode(
+          createStreamMessage("error", {
+            modelId: "request",
+            error: "Failed to process inference request",
+          })
+        )
+      );
+    } finally {
+      // Always close the writer
+      await writer.close();
+    }
+  })();
+
+  return response;
 }

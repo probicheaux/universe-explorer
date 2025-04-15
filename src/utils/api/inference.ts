@@ -25,40 +25,135 @@ export const inferImage = (
 
   // Create POST request with the image data
   const body = JSON.stringify({ image: base64Data });
-  const url = `/api/infer?body=${encodeURIComponent(body)}`;
 
-  // Create EventSource for streaming
-  const eventSource = new EventSource(url);
+  // Create AbortController for cleanup
+  const controller = new AbortController();
+  const { signal } = controller;
 
-  // Handle different event types
-  eventSource.addEventListener("models", ((event: MessageEvent) => {
-    const { models } = JSON.parse(event.data);
-    callbacks.onModels?.(models);
-  }) as EventListener);
+  // Use fetch with streaming
+  fetch("/api/infer", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body,
+    signal,
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-  eventSource.addEventListener("inference", ((event: MessageEvent) => {
-    const { modelId, result } = JSON.parse(event.data);
-    callbacks.onInference?.(modelId, result);
-  }) as EventListener);
+      // Get the reader from the response body stream
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("Response body is not readable");
+      }
 
-  eventSource.addEventListener("error", ((event: MessageEvent) => {
-    if (event.data) {
-      const { modelId, error } = JSON.parse(event.data);
-      callbacks.onError?.(modelId, error);
-    } else {
-      // Handle connection errors
-      console.error("EventSource failed:", event);
-      eventSource.close();
-    }
-  }) as EventListener);
+      // Create a text decoder to decode the stream
+      const decoder = new TextDecoder();
+      let buffer = "";
 
-  eventSource.addEventListener("complete", ((event: MessageEvent) => {
-    callbacks.onComplete?.();
-    eventSource.close();
-  }) as EventListener);
+      // Process the stream
+      const processStream = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) {
+              break;
+            }
+
+            // Decode the chunk and add it to the buffer
+            buffer += decoder.decode(value, { stream: true });
+
+            // Process complete SSE messages in the buffer
+            const lines = buffer.split("\n\n");
+            buffer = lines.pop() || ""; // Keep the last incomplete chunk in the buffer
+
+            for (const line of lines) {
+              if (!line.trim()) continue;
+
+              // Parse SSE message
+              const [eventLine, dataLine] = line.split("\n");
+              const event = eventLine.replace("event: ", "");
+              const data = dataLine.replace("data: ", "");
+
+              try {
+                const parsedData = JSON.parse(data);
+
+                // Handle different event types
+                switch (event) {
+                  case "models":
+                    callbacks.onModels?.(parsedData.models);
+                    break;
+                  case "inference":
+                    callbacks.onInference?.(
+                      parsedData.modelId,
+                      parsedData.result
+                    );
+                    break;
+                  case "error":
+                    callbacks.onError?.(parsedData.modelId, parsedData.error);
+                    break;
+                  case "complete":
+                    callbacks.onComplete?.();
+                    break;
+                }
+              } catch (e) {
+                console.error("Error parsing SSE data:", e);
+              }
+            }
+          }
+
+          // Process any remaining data in the buffer
+          if (buffer.trim()) {
+            const [eventLine, dataLine] = buffer.split("\n");
+            const event = eventLine.replace("event: ", "");
+            const data = dataLine.replace("data: ", "");
+
+            try {
+              const parsedData = JSON.parse(data);
+
+              switch (event) {
+                case "models":
+                  callbacks.onModels?.(parsedData.models);
+                  break;
+                case "inference":
+                  callbacks.onInference?.(
+                    parsedData.modelId,
+                    parsedData.result
+                  );
+                  break;
+                case "error":
+                  callbacks.onError?.(parsedData.modelId, parsedData.error);
+                  break;
+                case "complete":
+                  callbacks.onComplete?.();
+                  break;
+              }
+            } catch (e) {
+              console.error("Error parsing SSE data:", e);
+            }
+          }
+        } catch (error) {
+          console.error("Error reading stream:", error);
+        }
+      };
+
+      processStream();
+    })
+    .catch((error) => {
+      console.error("Fetch error:", error);
+      callbacks.onError?.(
+        "connection",
+        "Failed to connect to inference service"
+      );
+      callbacks.onComplete?.();
+    });
 
   // Return cleanup function
   return () => {
-    eventSource.close();
+    controller.abort();
   };
 };
