@@ -2,11 +2,11 @@ import React from "react";
 
 export type TabType = "find" | "results";
 
-interface TabsProps {
+export interface TabsProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
-  onMouseEnterTabButton: () => void;
-  onMouseLeaveTabButton: () => void;
+  onMouseEnterTabButton?: () => void;
+  onMouseLeaveTabButton?: () => void;
 }
 
 export default function Tabs({

@@ -60,7 +60,7 @@ export default function ImageArea({
   // Add effect to notify parent of image dimensions
   useEffect(() => {
     const img = document.querySelector("img");
-    if (!img) return;
+    if (!img) return undefined;
 
     const updateDimensions = () => {
       const containerRect = containerRef.current?.getBoundingClientRect();
