@@ -327,7 +327,7 @@ export default function UniverseExplorer() {
                 }
                 scale={scale}
                 offset={offset}
-                selectedModel={selectedModel || undefined}
+                selectedModel={selectedModel ?? undefined}
               />
             )}
           </div>

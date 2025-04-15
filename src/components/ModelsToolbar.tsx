@@ -18,7 +18,7 @@ interface ModelsToolbarProps {
   };
   scale: { x: number; y: number };
   offset: { x: number; y: number };
-  selectedModel?: string;
+  selectedModel?: string | undefined;
 }
 
 // Memoize the individual model card to prevent unnecessary re-renders
@@ -36,6 +36,14 @@ const ModelCard = React.memo(
     boxOverlap: number;
     isSelected?: boolean;
   }) => {
+    console.log("ModelCard props:", {
+      modelId: model.id,
+      isSelected,
+      className: isSelected
+        ? "bg-blue-900/30 border-blue-500/50 shadow-lg shadow-blue-500/20"
+        : "bg-gray-800/50 border-gray-700 hover:bg-gray-700/50",
+    });
+
     const hasError = result?.error;
     const isComplete = result && !hasError;
 
@@ -310,6 +318,11 @@ function ModelsToolbar({
       const model = sortedModels[index];
       const modelResult = results[model.id];
       const isSelected = selectedModel === model.id;
+      console.log("ModelCard render:", {
+        modelId: model.id,
+        selectedModel,
+        isSelected,
+      });
       return (
         <div style={{ ...style, paddingBottom: "12px" }}>
           <ModelCard
