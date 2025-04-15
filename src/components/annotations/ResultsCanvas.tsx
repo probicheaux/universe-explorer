@@ -152,8 +152,11 @@ export default function ResultsCanvas({
         console.log("offset", offset);
 
         // Scale the coordinates and apply offset to match the rendered image position
-        const scaledX = (box.x - offset.x) * scale.x + offset.x;
-        const scaledY = (box.y - offset.y) * scale.y + offset.y;
+        const scaledX =
+          (box.x - offset.x) * scale.x + offset.x - (box.width * scale.x) / 2;
+        const scaledY =
+          (box.y - offset.y) * scale.y + offset.y - (box.height * scale.y) / 2;
+
         const scaledWidth = box.width * scale.x;
         const scaledHeight = box.height * scale.y;
 
