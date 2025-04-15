@@ -71,9 +71,18 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
 
     const handleSubmit = () => {
       if (prompt.trim()) {
+        console.log("Submitting prompt:", prompt);
         onComplete({ prompt });
         setShowSuggestions(false);
       }
+    };
+
+    const handleSuggestionClick = (suggestion: PromptSuggestion) => {
+      console.log("Suggestion clicked:", suggestion);
+      setPrompt(suggestion.text);
+      setShowSuggestions(false);
+      console.log("Calling onComplete with:", suggestion.text);
+      onComplete({ prompt: suggestion.text });
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -99,8 +108,11 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
         case "Enter":
           e.preventDefault();
           if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
-            setPrompt(suggestions[selectedIndex].text);
-            setShowSuggestions(false);
+            console.log(
+              "Enter pressed with suggestion:",
+              suggestions[selectedIndex]
+            );
+            handleSuggestionClick(suggestions[selectedIndex]);
           } else {
             handleSubmit();
           }
@@ -113,13 +125,20 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
     };
 
     const handleBlur = (e: React.FocusEvent) => {
+      console.log("Blur event:", e);
       // Check if the related target is within the textarea or suggestions
       if (
         !e.currentTarget.contains(e.relatedTarget as Node) &&
         !suggestionsRef.current?.contains(e.relatedTarget as Node)
       ) {
-        onBlur?.();
-        setShowSuggestions(false);
+        // Add a small delay to allow click events to process
+        setTimeout(() => {
+          if (!document.activeElement?.closest(".suggestions-dropdown")) {
+            console.log("Blur outside component, calling onBlur");
+            onBlur?.();
+            setShowSuggestions(false);
+          }
+        }, 100);
       }
     };
 
@@ -139,7 +158,7 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
           {showSuggestions && (
             <div
               ref={suggestionsRef}
-              className="absolute z-50 w-full bottom-full mb-2 bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-lg shadow-xl overflow-hidden transition-all duration-200 ease-in-out"
+              className="absolute z-50 w-full bottom-full mb-2 bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-lg shadow-xl overflow-hidden transition-all duration-200 ease-in-out suggestions-dropdown"
               style={{ boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)" }}
             >
               {isLoading ? (
@@ -156,9 +175,11 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
                           ? "bg-gray-800 text-gray-100"
                           : "text-gray-300 hover:bg-gray-800/50"
                       }`}
-                      onClick={() => {
-                        setPrompt(suggestion.text);
-                        setShowSuggestions(false);
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log("Suggestion clicked directly:", suggestion);
+                        handleSuggestionClick(suggestion);
                       }}
                     >
                       {suggestion.text}

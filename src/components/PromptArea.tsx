@@ -19,6 +19,12 @@ export default function PromptArea({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Check if the click is on a suggestion
+      const target = event.target as HTMLElement;
+      if (target.closest(".suggestions-dropdown")) {
+        return;
+      }
+
       if (
         containerRef.current &&
         !containerRef.current.contains(event.target as Node) &&
@@ -41,6 +47,16 @@ export default function PromptArea({
     }
   }, [isEditing]);
 
+  const handlePromptChange = (data: { prompt: string }) => {
+    console.log("PromptArea: handlePromptChange called with:", data);
+    onPromptChange(data.prompt);
+    // Add a small delay to ensure the prompt is set before transitioning
+    setTimeout(() => {
+      console.log("PromptArea: Setting isEditing to false");
+      setIsEditing(false);
+    }, 100);
+  };
+
   return (
     <div
       className={`p-6 border-t border-gray-800 transition-all duration-300 ${
@@ -62,7 +78,12 @@ export default function PromptArea({
               : "opacity-100 transform translate-y-0",
             editable ? "cursor-pointer" : "cursor-default"
           )}
-          onClick={() => editable && setIsEditing(true)}
+          onClick={() => {
+            console.log(
+              "PromptArea: Static view clicked, setting isEditing to true"
+            );
+            editable && setIsEditing(true);
+          }}
         >
           <h3 className="text-lg font-semibold text-gray-200 mb-2">
             What do you want to understand about your image?
@@ -88,11 +109,11 @@ export default function PromptArea({
         >
           <PromptInput
             ref={inputRef}
-            onComplete={(data) => {
-              onPromptChange(data.prompt);
+            onComplete={handlePromptChange}
+            onBlur={() => {
+              console.log("PromptArea: onBlur called");
               setIsEditing(false);
             }}
-            onBlur={() => setIsEditing(false)}
             initialValue={prompt}
           />
         </div>
