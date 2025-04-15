@@ -106,46 +106,6 @@ export default function ResultsCanvas({
 
   return (
     <div ref={containerRef} className="absolute inset-0 z-10">
-      {/* Debug box to visualize reported dimensions */}
-      {imageDimensions && (
-        <div
-          style={{
-            position: "absolute",
-            left: imageDimensions.x,
-            top: imageDimensions.y,
-            width: imageDimensions.width,
-            height: imageDimensions.height,
-            border: "2px solid red",
-            pointerEvents: "none",
-          }}
-        />
-      )}
-      {/* Debug box to visualize container dimensions */}
-      {containerRef.current && (
-        <div
-          style={{
-            position: "absolute",
-            left: containerDimensions.x,
-            top: containerDimensions.y,
-            width: containerDimensions.width,
-            height: containerDimensions.height,
-            border: "2px solid blue",
-            pointerEvents: "none",
-          }}
-        />
-      )}
-      {/* Debug offset point visualization   */}
-      <div
-        style={{
-          position: "absolute",
-          left: offset.x,
-          top: offset.y,
-          width: 10,
-          height: 10,
-          backgroundColor: "green",
-          pointerEvents: "none",
-        }}
-      />
       {boxesToDisplay.map((box, index) => {
         const color = getColorForLabel(box.class);
 
