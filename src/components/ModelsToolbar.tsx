@@ -262,6 +262,22 @@ const ModelCard = React.memo(
         </div>
       </div>
     );
+  },
+  // Custom comparison function to prevent unnecessary re-renders
+  (prevProps, nextProps) => {
+    // Only re-render if these specific props change
+    return (
+      prevProps.model.id === nextProps.model.id &&
+      prevProps.isSelected === nextProps.isSelected &&
+      prevProps.isBestMatch === nextProps.isBestMatch &&
+      prevProps.boxOverlap === nextProps.boxOverlap &&
+      // Check if the result has changed
+      (prevProps.result === nextProps.result ||
+        (prevProps.result?.error === nextProps.result?.error &&
+          prevProps.result?.predictions?.length ===
+            nextProps.result?.predictions?.length &&
+          prevProps.result?.time === nextProps.result?.time))
+    );
   }
 );
 
@@ -279,6 +295,27 @@ function ModelsToolbar({
   selectedModel,
   autoSelectFirstModel = false,
 }: ModelsToolbarProps) {
+  // Memoize the box overlap calculations for each model
+  const modelOverlaps = useMemo(() => {
+    if (!imageDimensions) return {};
+
+    const overlaps: Record<string, number> = {};
+
+    models.forEach((model) => {
+      const result = results[model.id];
+      if (result && !result.error) {
+        overlaps[model.id] = calculateBoxOverlap(
+          drawnBoxes,
+          result,
+          scale,
+          offset
+        );
+      }
+    });
+
+    return overlaps;
+  }, [models, results, drawnBoxes, imageDimensions, scale, offset]);
+
   // Filter out models with errors and calculate match percentages
   const sortedModels = useMemo(() => {
     if (!imageDimensions) return models;
@@ -290,21 +327,11 @@ function ModelsToolbar({
     });
 
     return [...validModels].sort((a, b) => {
-      const boxOverlapA = calculateBoxOverlap(
-        drawnBoxes,
-        results[a.id],
-        scale,
-        offset
-      );
-      const boxOverlapB = calculateBoxOverlap(
-        drawnBoxes,
-        results[b.id],
-        scale,
-        offset
-      );
+      const boxOverlapA = modelOverlaps[a.id] || 0;
+      const boxOverlapB = modelOverlaps[b.id] || 0;
       return boxOverlapB - boxOverlapA; // Sort in descending order
     });
-  }, [models, results, drawnBoxes, imageDimensions, scale, offset]);
+  }, [models, results, imageDimensions, modelOverlaps]);
 
   // Select the first model by default when no model is selected
   useEffect(() => {
@@ -320,33 +347,22 @@ function ModelsToolbar({
       const modelResult = results[model.id];
       const isSelected = selectedModel === model.id;
       const isBestMatch = index === 0;
+      const boxOverlap = modelOverlaps[model.id] || 0;
+
       return (
         <div style={{ ...style, paddingBottom: "12px", paddingTop: "12px" }}>
           <ModelCard
             model={model}
             result={modelResult}
             onSelect={onModelSelect || (() => {})}
-            boxOverlap={
-              imageDimensions
-                ? calculateBoxOverlap(drawnBoxes, modelResult, scale, offset)
-                : 0
-            }
+            boxOverlap={boxOverlap}
             isSelected={isSelected}
             isBestMatch={isBestMatch}
           />
         </div>
       );
     },
-    [
-      sortedModels,
-      results,
-      onModelSelect,
-      drawnBoxes,
-      imageDimensions,
-      scale,
-      offset,
-      selectedModel,
-    ]
+    [sortedModels, results, onModelSelect, modelOverlaps, selectedModel]
   );
 
   return (
