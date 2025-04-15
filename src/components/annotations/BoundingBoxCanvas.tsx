@@ -16,11 +16,12 @@ interface BoundingBoxData {
 
 interface BoundingBoxCanvasProps {
   selectedClass: string;
-  onBoxesChange?: (boxes: any[]) => void;
+  onBoxesChange?: (boxes: BoundingBoxData[]) => void;
   availableClasses: string[];
   onClassSelect: (className: string) => void;
   classColors: Record<string, string>;
   className?: string;
+  boxes: BoundingBoxData[];
 }
 
 export default function BoundingBoxCanvas({
@@ -30,11 +31,11 @@ export default function BoundingBoxCanvas({
   onClassSelect,
   classColors,
   className = "",
+  boxes = [],
 }: BoundingBoxCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentBox, setCurrentBox] = useState<BoundingBoxData | null>(null);
-  const [boxes, setBoxes] = useState<BoundingBoxData[]>([]);
   const [mousePosition, setMousePosition] = useState<Point>({ x: 0, y: 0 });
   const [showClassMenu, setShowClassMenu] = useState(false);
   const [pendingBox, setPendingBox] = useState<BoundingBoxData | null>(null);
@@ -52,10 +53,6 @@ export default function BoundingBoxCanvas({
   );
   const [originalBox, setOriginalBox] = useState<BoundingBoxData | null>(null);
 
-  // Undo history state
-  const [history, setHistory] = useState<BoundingBoxData[][]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-
   // Use a ref to track the current mouse position during drawing
   const currentMousePositionRef = useRef<Point>({ x: 0, y: 0 });
 
@@ -64,59 +61,6 @@ export default function BoundingBoxCanvas({
 
   // Use a ref to track the current box being drawn
   const currentBoxRef = useRef<BoundingBoxData | null>(null);
-
-  // Initialize history with empty boxes array
-  useEffect(() => {
-    setHistory([[]]);
-    setHistoryIndex(0);
-  }, []);
-
-  // Update box colors when classColors change
-  useEffect(() => {
-    if (boxes.length > 0) {
-      const updatedBoxes = boxes.map((box) => {
-        // Only update color if the class exists in classColors
-        if (classColors[box.label]) {
-          return {
-            ...box,
-            color: classColors[box.label],
-          };
-        }
-        return box;
-      });
-
-      // Only update if there are actual changes
-      if (JSON.stringify(updatedBoxes) !== JSON.stringify(boxes)) {
-        setBoxes(updatedBoxes);
-        onBoxesChange?.(updatedBoxes);
-        addToHistory(updatedBoxes);
-      }
-    }
-  }, [classColors]);
-
-  // Function to add a new state to history
-  const addToHistory = useCallback(
-    (newBoxes: BoundingBoxData[]) => {
-      // Remove any future states if we're not at the end of history
-      const newHistory = history.slice(0, historyIndex + 1);
-      // Add the new state
-      newHistory.push([...newBoxes]);
-      setHistory(newHistory);
-      setHistoryIndex(newHistory.length - 1);
-    },
-    [history, historyIndex]
-  );
-
-  // Function to undo the last action
-  const handleUndo = useCallback(() => {
-    if (historyIndex > 0) {
-      const newIndex = historyIndex - 1;
-      setHistoryIndex(newIndex);
-      const previousBoxes = history[newIndex];
-      setBoxes(previousBoxes);
-      onBoxesChange?.(previousBoxes);
-    }
-  }, [historyIndex, history, onBoxesChange]);
 
   const getRelativeCoordinates = (e: React.MouseEvent): Point => {
     if (!canvasRef.current) return { x: 0, y: 0 };
@@ -216,7 +160,6 @@ export default function BoundingBoxCanvas({
 
       const newBoxes = [...boxes];
       newBoxes[selectedBoxIndex] = updatedBox;
-      setBoxes(newBoxes);
       onBoxesChange?.(newBoxes);
     }
 
@@ -258,7 +201,6 @@ export default function BoundingBoxCanvas({
 
       const newBoxes = [...boxes];
       newBoxes[selectedBoxIndex] = updatedBox;
-      setBoxes(newBoxes);
       onBoxesChange?.(newBoxes);
     }
   };
@@ -279,10 +221,7 @@ export default function BoundingBoxCanvas({
         // If we have a selected class, add the box directly
         if (selectedClass) {
           const newBoxes = [...boxes, currentBoxRef.current];
-          setBoxes(newBoxes);
           onBoxesChange?.(newBoxes);
-          // Add to history
-          addToHistory(newBoxes);
         } else {
           // Otherwise, show the class selection menu
           setPendingBox(currentBoxRef.current);
@@ -308,8 +247,6 @@ export default function BoundingBoxCanvas({
       setIsMoving(false);
       setMoveStartPosition(null);
       setOriginalBox(null);
-      // Add to history after move is complete
-      addToHistory(boxes);
     }
 
     // End resize operation
@@ -317,8 +254,6 @@ export default function BoundingBoxCanvas({
       setIsResizing(false);
       setResizeHandle(null);
       setOriginalBox(null);
-      // Add to history after resize is complete
-      addToHistory(boxes);
     }
   };
 
@@ -331,10 +266,7 @@ export default function BoundingBoxCanvas({
         color: classColors[className],
       };
       const newBoxes = [...boxes, updatedBox];
-      setBoxes(newBoxes);
       onBoxesChange?.(newBoxes);
-      // Add to history
-      addToHistory(newBoxes);
 
       // Select the class for future boxes
       onClassSelect(className);
@@ -379,19 +311,13 @@ export default function BoundingBoxCanvas({
   };
 
   const handleDeleteBox = useCallback(() => {
-    console.log("Delete box clicked, selectedBoxIndex:", selectedBoxIndex);
     if (selectedBoxIndex !== null) {
-      console.log("Deleting box at index:", selectedBoxIndex);
       const newBoxes = boxes.filter((_, i) => i !== selectedBoxIndex);
-      console.log("New boxes array:", newBoxes);
-      setBoxes(newBoxes);
       onBoxesChange?.(newBoxes);
-      // Add to history
-      addToHistory(newBoxes);
       setSelectedBoxIndex(null);
       setShowBoxMenu(false);
     }
-  }, [selectedBoxIndex, boxes, onBoxesChange, addToHistory]);
+  }, [selectedBoxIndex, boxes, onBoxesChange]);
 
   const handleChangeClass = (className: string) => {
     if (selectedBoxIndex !== null) {
@@ -401,10 +327,7 @@ export default function BoundingBoxCanvas({
         label: className,
         color: classColors[className],
       };
-      setBoxes(newBoxes);
       onBoxesChange?.(newBoxes);
-      // Add to history
-      addToHistory(newBoxes);
       setSelectedBoxIndex(null);
       setShowBoxMenu(false);
     }
@@ -429,13 +352,8 @@ export default function BoundingBoxCanvas({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      // Handle undo with Cmd/Ctrl + Z
-      if ((e.metaKey || e.ctrlKey) && e.key === "z") {
-        e.preventDefault();
-        handleUndo();
-      }
       // Handle delete key
-      else if (e.key === "Delete" && selectedBoxIndex !== null) {
+      if (e.key === "Delete" && selectedBoxIndex !== null) {
         handleDeleteBox();
       }
       // Handle escape key
@@ -453,7 +371,6 @@ export default function BoundingBoxCanvas({
       selectedBoxIndex,
       showClassMenu,
       showBoxMenu,
-      handleUndo,
       handleDeleteBox,
       handleCloseMenu,
     ]
@@ -463,13 +380,6 @@ export default function BoundingBoxCanvas({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
-
-  // Update parent component when boxes change
-  useEffect(() => {
-    if (onBoxesChange) {
-      onBoxesChange(boxes);
-    }
-  }, [boxes, onBoxesChange]);
 
   return (
     <div

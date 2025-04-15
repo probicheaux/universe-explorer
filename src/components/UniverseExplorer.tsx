@@ -137,6 +137,7 @@ export default function UniverseExplorer() {
                 classColors={classColors}
                 onBoxesChange={handleBoxesChange}
                 className={activeTab === "find" ? "block" : "hidden z-0"}
+                boxes={boxes}
               />
             )}
 
