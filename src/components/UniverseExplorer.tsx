@@ -48,6 +48,11 @@ export default function UniverseExplorer() {
     }
   }, [classes, selectedClass]);
 
+  // Add effect to log image dimensions changes
+  useEffect(() => {
+    console.log("Image dimensions updated:", imageDimensions);
+  }, [imageDimensions]);
+
   const handleImageChange = (imageData: string) => {
     // Clear bounding boxes when image changes
     setBoxes([]);
@@ -134,7 +139,10 @@ export default function UniverseExplorer() {
             <ImageArea
               image={image}
               onImageChange={handleImageChange}
-              onImageDimensionsChange={setImageDimensions}
+              onImageDimensionsChange={(dimensions) => {
+                console.log("ImageArea reported dimensions:", dimensions);
+                setImageDimensions(dimensions);
+              }}
             />
 
             {/* Tabs for switching between Find and Results */}
@@ -204,7 +212,7 @@ export default function UniverseExplorer() {
             )}
 
             {/* Results Canvas */}
-            {image && prompt && activeTab === "results" && (
+            {image && prompt && activeTab === "results" && imageDimensions && (
               <ResultsCanvas
                 results={inferenceResults}
                 image={image}

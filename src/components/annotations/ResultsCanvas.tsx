@@ -68,9 +68,10 @@ export default function ResultsCanvas({
         scaleY: `${imageDimensions.height} / ${imgHeight} = ${scaleY}`,
       });
 
-      // Calculate offset based on the image's position relative to our container
-      const offsetX = imageDimensions.x - containerRect.left;
-      const offsetY = imageDimensions.y - containerRect.top;
+      // The imageDimensions x and y are already relative to the container
+      // so we don't need to subtract containerRect.left/top
+      const offsetX = imageDimensions.x;
+      const offsetY = imageDimensions.y;
 
       console.log("Offset:", { x: offsetX, y: offsetY });
 

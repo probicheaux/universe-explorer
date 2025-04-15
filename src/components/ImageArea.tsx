@@ -18,7 +18,14 @@ export default function ImageArea({
   onImageDimensionsChange,
 }: ImageAreaProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const imageContainerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const lastDimensionsRef = useRef<{
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+  } | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -61,17 +68,43 @@ export default function ImageArea({
 
   // Add effect to notify parent of image dimensions
   useEffect(() => {
-    if (image && imageContainerRef.current) {
+    if (image && containerRef.current) {
       const updateDimensions = () => {
-        const img = imageContainerRef.current?.querySelector("img");
+        const img = containerRef.current?.querySelector("img");
         if (img) {
-          const rect = img.getBoundingClientRect();
-          onImageDimensionsChange?.({
-            width: rect.width,
-            height: rect.height,
-            x: rect.left,
-            y: rect.top,
-          });
+          const containerRect = containerRef.current!.getBoundingClientRect();
+          const imgRect = img.getBoundingClientRect();
+
+          // Calculate position relative to container
+          const x = imgRect.left - containerRect.left;
+          const y = imgRect.top - containerRect.top;
+
+          const newDimensions = {
+            width: imgRect.width,
+            height: imgRect.height,
+            x,
+            y,
+          };
+
+          // Only update if dimensions have changed
+          if (
+            !lastDimensionsRef.current ||
+            lastDimensionsRef.current.width !== newDimensions.width ||
+            lastDimensionsRef.current.height !== newDimensions.height ||
+            lastDimensionsRef.current.x !== newDimensions.x ||
+            lastDimensionsRef.current.y !== newDimensions.y
+          ) {
+            // Clear any pending timeout
+            if (timeoutRef.current) {
+              clearTimeout(timeoutRef.current);
+            }
+
+            // Debounce the update
+            timeoutRef.current = setTimeout(() => {
+              lastDimensionsRef.current = newDimensions;
+              onImageDimensionsChange?.(newDimensions);
+            }, 100);
+          }
         }
       };
 
@@ -80,12 +113,15 @@ export default function ImageArea({
 
       // Set up resize observer
       const resizeObserver = new ResizeObserver(updateDimensions);
-      if (imageContainerRef.current) {
-        resizeObserver.observe(imageContainerRef.current);
+      if (containerRef.current) {
+        resizeObserver.observe(containerRef.current);
       }
 
       return () => {
         resizeObserver.disconnect();
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
       };
     }
   }, [image, onImageDimensionsChange]);
@@ -101,7 +137,7 @@ export default function ImageArea({
     >
       {image ? (
         <div
-          ref={imageContainerRef}
+          ref={containerRef}
           className="relative w-full h-full flex items-center justify-center"
         >
           <Image
