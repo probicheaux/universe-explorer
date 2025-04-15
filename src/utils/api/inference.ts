@@ -1,12 +1,34 @@
 import { InferImageResponse } from "@/adapters/roboflowAdapter";
 
-export type ModelInfo = {
+export interface ModelInfo {
   id: string;
-  url: string;
-  version: string;
   name: string;
-  description: string;
-};
+  description?: string;
+  type?: string;
+  bestModelScore?: number;
+  classCounts?: Array<{
+    name: string;
+    count: number;
+  }>;
+  images?: number;
+  universeStats?: {
+    totals: {
+      downloads: number;
+      views: number;
+    };
+    last30DaysTotals: {
+      downloads: number;
+      views: number;
+    };
+  };
+  universe?: {
+    stars: number;
+  };
+  icon?: string;
+  annotation?: string;
+  url?: string;
+  version?: number;
+}
 
 export type InferenceEventCallbacks = {
   onModels?: (models: ModelInfo[]) => void;
