@@ -60,7 +60,7 @@ function getBoxArea(box: Box): number {
  * @param imageDimensions The dimensions of the rendered image
  * @returns The match percentage (0-100)
  */
-export function calculateMatchPercentage(
+export function calculateBoxOverlap(
   drawnBoxes: Box[],
   modelResult: InferImageResponse | undefined,
   scale: { x: number; y: number },

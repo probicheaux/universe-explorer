@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useCallback } from "react";
 import { ModelInfo } from "@/utils/api/inference";
-import { calculateMatchPercentage } from "@/utils/boxOverlap";
+import { calculateBoxOverlap } from "@/utils/boxOverlap";
 import { InferImageResponse } from "@/adapters/roboflowAdapter";
 
 interface ModelsToolbarProps {
@@ -25,12 +25,12 @@ const ModelCard = React.memo(
     model,
     result,
     onSelect,
-    matchPercentage,
+    boxOverlap,
   }: {
     model: ModelInfo;
     result: InferImageResponse;
     onSelect: (modelId: string) => void;
-    matchPercentage: number;
+    boxOverlap: number;
   }) => {
     const hasError = result?.error;
     const isComplete = result && !hasError;
@@ -71,7 +71,7 @@ const ModelCard = React.memo(
               {(result.time * 1000).toFixed(0)}ms
             </div>
             <div className="text-xs text-blue-400">
-              {matchPercentage}% match
+              {boxOverlap.toFixed(2)}% match
             </div>
           </div>
         )}
@@ -97,19 +97,19 @@ function ModelsToolbar({
     if (!imageDimensions) return models;
 
     return [...models].sort((a, b) => {
-      const matchA = calculateMatchPercentage(
+      const boxOverlapA = calculateBoxOverlap(
         drawnBoxes,
         results[a.id],
         scale,
         offset
       );
-      const matchB = calculateMatchPercentage(
+      const boxOverlapB = calculateBoxOverlap(
         drawnBoxes,
         results[b.id],
         scale,
         offset
       );
-      return matchB - matchA; // Sort in descending order
+      return boxOverlapB - boxOverlapA; // Sort in descending order
     });
   }, [models, results, drawnBoxes, imageDimensions]);
 
@@ -128,14 +128,9 @@ function ModelsToolbar({
         model={model}
         result={results[model.id]}
         onSelect={onModelSelect || (() => {})}
-        matchPercentage={
+        boxOverlap={
           imageDimensions
-            ? calculateMatchPercentage(
-                drawnBoxes,
-                results[model.id],
-                scale,
-                offset
-              )
+            ? calculateBoxOverlap(drawnBoxes, results[model.id], scale, offset)
             : 0
         }
       />
