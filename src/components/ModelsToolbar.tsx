@@ -58,10 +58,10 @@ const ModelCard = React.memo(
 
     return (
       <div
-        className="group h-[220px] flex flex-col bg-gray-800/50 rounded-md border border-gray-700 hover:bg-gray-700/50 transition-all cursor-pointer"
+        className="group h-[220px] flex flex-col bg-gray-800/50 rounded-md border border-gray-700 hover:bg-gray-700/50 transition-all cursor-pointer overflow-visible"
         onClick={handleClick}
       >
-        <div className="flex flex-col gap-2 p-3 h-full">
+        <div className="flex flex-col gap-2 p-3 h-full overflow-visible">
           {/* Header with model name and status */}
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-gray-200 truncate flex-1 mr-2">
@@ -123,14 +123,9 @@ const ModelCard = React.memo(
           {/* Model type badge */}
           <div className="flex items-center gap-2 flex-wrap">
             {model.bestModelScore && (
-              <div className="relative group/map">
-                <span className="text-xs px-1.5 py-0.5 rounded bg-purple-900/50 text-purple-400">
-                  mAP@50: {model.bestModelScore.toFixed(1)}%
-                </span>
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-xs text-gray-300 rounded opacity-0 group-hover/map:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
-                  Mean Average Precision at 50% IoU threshold for the best model
-                </div>
-              </div>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-purple-900/50 text-purple-400">
+                mAP@50: {model.bestModelScore.toFixed(1)}%
+              </span>
             )}
           </div>
 
