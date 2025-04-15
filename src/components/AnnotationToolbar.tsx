@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export type TaskType =
   | "object-detection"
@@ -31,7 +31,7 @@ interface AnnotationToolbarProps {
 export default function AnnotationToolbar({
   taskType = "object-detection",
   onTaskTypeChange,
-  classes = ["person", "car", "truck"],
+  classes,
   onClassesChange,
   selectedClass = "",
   onClassSelect,
@@ -41,17 +41,31 @@ export default function AnnotationToolbar({
   const [newClass, setNewClass] = useState("");
   const [isAddingClass, setIsAddingClass] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [localClasses, setLocalClasses] = useState<string[]>(classes || []);
+
+  // Update localClasses when classes prop changes
+  useEffect(() => {
+    console.log("AnnotationToolbar: classes prop changed to:", classes);
+    if (classes) {
+      setLocalClasses(classes);
+    }
+  }, [classes]);
+
+  // Log when classes prop changes
+  console.log("AnnotationToolbar received classes:", classes);
 
   const handleAddClass = () => {
     const trimmedClass = newClass.trim();
     if (trimmedClass && onClassesChange) {
       // Check for duplicates (case-insensitive)
-      if (classes.some((c) => c.toLowerCase() === trimmedClass.toLowerCase())) {
+      if (
+        localClasses.some((c) => c.toLowerCase() === trimmedClass.toLowerCase())
+      ) {
         setError("This class already exists");
         return;
       }
       setError(null);
-      onClassesChange([...classes, trimmedClass]);
+      onClassesChange([...localClasses, trimmedClass]);
       setNewClass("");
       setIsAddingClass(false);
     }
@@ -70,7 +84,7 @@ export default function AnnotationToolbar({
 
   const handleRemoveClass = (classToRemove: string) => {
     if (onClassesChange) {
-      onClassesChange(classes.filter((c) => c !== classToRemove));
+      onClassesChange(localClasses.filter((c) => c !== classToRemove));
       if (selectedClass === classToRemove && onClassSelect) {
         onClassSelect("");
       }
@@ -82,6 +96,10 @@ export default function AnnotationToolbar({
       onClassSelect(className === selectedClass ? "" : className);
     }
   };
+
+  // Ensure we have at least some default classes if none are provided
+  const displayClasses =
+    localClasses.length > 0 ? localClasses : ["person", "car", "truck"];
 
   return (
     <div className="w-64 h-full bg-gray-900/80 backdrop-blur-md rounded-l-lg p-4 border border-gray-800 shadow-lg">
@@ -120,7 +138,7 @@ export default function AnnotationToolbar({
           </button>
         </div>
         <div className="flex flex-wrap gap-2 mb-2">
-          {classes.map((cls) => {
+          {displayClasses.map((cls) => {
             const color = classColors[cls] || "#666666";
             const isSelected = cls === selectedClass;
 

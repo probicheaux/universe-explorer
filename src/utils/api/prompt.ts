@@ -38,7 +38,7 @@ export const prompt = {
       }
 
       const data = await response.json();
-      return { data };
+      return data;
     } catch (error) {
       console.error("Error sending prompt:", error);
       return {

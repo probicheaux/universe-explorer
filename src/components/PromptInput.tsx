@@ -21,6 +21,7 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
     const [isLoading, setIsLoading] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(-1);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [isSuggestionClick, setIsSuggestionClick] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const suggestionsRef = useRef<HTMLDivElement>(null);
     const finalRef = (ref ||
@@ -77,10 +78,16 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
 
     const handleSuggestionClick = (suggestion: PromptSuggestion) => {
       console.log("Suggestion clicked:", suggestion);
+      setIsSuggestionClick(true);
       setPrompt(suggestion.text);
       setShowSuggestions(false);
       console.log("Calling onComplete with:", suggestion.text);
       onComplete({ prompt: suggestion.text });
+
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        setIsSuggestionClick(false);
+      }, 200);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -124,6 +131,13 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
 
     const handleBlur = (e: React.FocusEvent) => {
       console.log("Blur event:", e);
+
+      // Skip blur handling if a suggestion is being clicked
+      if (isSuggestionClick) {
+        console.log("Skipping blur handling due to suggestion click");
+        return;
+      }
+
       // Check if the related target is within the textarea or suggestions
       if (
         !e.currentTarget.contains(e.relatedTarget as Node) &&

@@ -63,22 +63,118 @@ export default function UniverseExplorer() {
     setBoxes([]);
     setInferenceResults({});
     setImage(imageData);
+
+    // Ensure we're in the "find" tab when an image is selected
+    setActiveTab("find");
+
+    // If we already have a prompt, process it to get classes and task type
+    if (prompt) {
+      processPrompt(prompt);
+    }
   };
 
-  const handlePromptChange = async (newPrompt: string) => {
-    setPrompt(newPrompt);
+  const processPrompt = async (promptText: string) => {
     setIsPromptLoading(true);
-
     try {
-      const response = await api.prompt.send(newPrompt);
+      console.log("=== PROCESS PROMPT START ===");
+      console.log("Processing prompt:", promptText);
+      console.log("Current classes before API call:", classes);
+
+      const response = await api.prompt.send(promptText);
+      console.log("Full API response:", JSON.stringify(response, null, 2));
+
       if (response.error) {
         console.error("Error from prompt API:", response.error);
         return;
       }
 
-      if (response.data) {
+      // Check if we have a message property in the response
+      if (response && typeof response === "object" && "message" in response) {
+        console.log("Message in response:", response.message);
+
+        try {
+          // Parse the message as JSON
+          const parsedMessage = JSON.parse(response.message as string);
+          console.log("Parsed message:", parsedMessage);
+
+          // Extract task and classes
+          if (parsedMessage.task && parsedMessage.classes) {
+            const { task, classes: newClasses } = parsedMessage;
+            console.log("Extracted task:", task);
+            console.log("Extracted classes:", newClasses);
+            console.log("Current classes before update:", classes);
+
+            // Update task type if valid
+            if (
+              task === "object-detection" ||
+              task === "instance-segmentation" ||
+              task === "classification" ||
+              task === "keypoint-detection" ||
+              task === "semantic-segmentation" ||
+              task === "multimodal"
+            ) {
+              console.log("Setting task type to:", task);
+              setTaskType(task);
+            }
+
+            // Update classes if valid
+            if (
+              newClasses &&
+              Array.isArray(newClasses) &&
+              newClasses.length > 0
+            ) {
+              console.log("Setting classes to:", newClasses);
+              // Force a state update by creating a new array
+              setClasses([...newClasses]);
+              console.log("Classes state updated with:", [...newClasses]);
+
+              // Remove boxes that reference classes that no longer exist
+              setBoxes((prevBoxes) => {
+                console.log(
+                  "Filtering boxes, current count:",
+                  prevBoxes.length
+                );
+                const filteredBoxes = prevBoxes.filter((box) => {
+                  const boxClassExists = newClasses.some(
+                    (cls) => cls.toLowerCase() === box.class.toLowerCase()
+                  );
+                  return boxClassExists;
+                });
+                console.log("Filtered boxes count:", filteredBoxes.length);
+                return filteredBoxes;
+              });
+
+              // Reset selected class
+              setSelectedClass("");
+              console.log("Selected class reset to empty string");
+            } else {
+              console.log("Classes validation failed:", {
+                isDefined: !!newClasses,
+                isArray: Array.isArray(newClasses),
+                length: newClasses?.length,
+              });
+            }
+          } else {
+            console.log(
+              "Missing task or classes in parsed message:",
+              parsedMessage
+            );
+          }
+        } catch (e) {
+          console.error("Error parsing message:", e);
+        }
+      }
+      // Check if we have data property with task and classes
+      else if (
+        response.data &&
+        "task" in response.data &&
+        "classes" in response.data
+      ) {
         const { task, classes: newClasses } = response.data;
-        // Validate that the task is a valid TaskType
+        console.log("Direct data from API - task:", task);
+        console.log("Direct data from API - classes:", newClasses);
+
+        // Update task type if valid
         if (
           task === "object-detection" ||
           task === "instance-segmentation" ||
@@ -87,37 +183,58 @@ export default function UniverseExplorer() {
           task === "semantic-segmentation" ||
           task === "multimodal"
         ) {
+          console.log("Setting task type to:", task);
           setTaskType(task);
         }
-        // Update classes and remove invalid boxes
-        setClasses(newClasses);
-        setBoxes((prevBoxes) => {
-          const filteredBoxes = prevBoxes.filter((box) => {
-            const boxClassExists = newClasses.some(
-              (cls) => cls.toLowerCase() === box.class.toLowerCase()
-            );
-            console.log("Box class check:", {
-              boxClass: box.class,
-              availableClasses: newClasses,
-              exists: boxClassExists,
+
+        // Update classes if valid
+        if (newClasses && Array.isArray(newClasses) && newClasses.length > 0) {
+          console.log("Setting classes to:", newClasses);
+          // Force a state update by creating a new array
+          setClasses([...newClasses]);
+          console.log("Classes state updated with:", [...newClasses]);
+
+          // Remove boxes that reference classes that no longer exist
+          setBoxes((prevBoxes) => {
+            console.log("Filtering boxes, current count:", prevBoxes.length);
+            const filteredBoxes = prevBoxes.filter((box) => {
+              const boxClassExists = newClasses.some(
+                (cls) => cls.toLowerCase() === box.class.toLowerCase()
+              );
+              return boxClassExists;
             });
-            return boxClassExists;
+            console.log("Filtered boxes count:", filteredBoxes.length);
+            return filteredBoxes;
           });
-          console.log("Boxes update:", {
-            before: prevBoxes.length,
-            after: filteredBoxes.length,
-            keptClasses: filteredBoxes.map((box) => box.class),
+
+          // Reset selected class
+          setSelectedClass("");
+          console.log("Selected class reset to empty string");
+        } else {
+          console.log("Classes validation failed:", {
+            isDefined: !!newClasses,
+            isArray: Array.isArray(newClasses),
+            length: newClasses?.length,
           });
-          return filteredBoxes;
-        });
-        // Reset selected class since we have new classes
-        setSelectedClass("");
+        }
+      } else {
+        console.log("No valid data found in response");
+        console.log("Response structure:", Object.keys(response));
+        if (response.data) {
+          console.log("Response.data structure:", Object.keys(response.data));
+        }
       }
     } catch (error) {
       console.error("Error processing prompt response:", error);
     } finally {
       setIsPromptLoading(false);
+      console.log("=== PROCESS PROMPT END ===");
     }
+  };
+
+  const handlePromptChange = async (newPrompt: string) => {
+    setPrompt(newPrompt);
+    await processPrompt(newPrompt);
   };
 
   const handleClassSelect = (className: string) => {
@@ -294,6 +411,11 @@ export default function UniverseExplorer() {
     console.log("activeTab changed to:", activeTab);
   }, [activeTab]);
 
+  // Log classes changes
+  useEffect(() => {
+    console.log("Classes updated:", classes);
+  }, [classes]);
+
   // Select the first model by default when the order changes, but only if user hasn't manually selected
   useEffect(() => {
     if (models.length > 0 && !userSelectedModel) {
@@ -311,6 +433,16 @@ export default function UniverseExplorer() {
           } overflow-hidden`}
         >
           <div className="w-64 h-full">
+            {/* Debug log */}
+            {(() => {
+              console.log(
+                "Rendering toolbar with activeTab:",
+                activeTab,
+                "classes:",
+                classes
+              );
+              return null;
+            })()}
             {activeTab === "find" ? (
               <AnnotationToolbar
                 taskType={taskType}
