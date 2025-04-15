@@ -109,8 +109,8 @@ export default function UniverseExplorer() {
   const canFindModel = image && prompt && boxes.length > 0;
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 text-white">
-      <div className="flex-1 flex overflow-hidden">
+    <div className="flex flex-col h-full bg-gray-950 text-white relative">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Toolbar - switches between Annotation and Models */}
         <div
           className={`transition-all duration-500 ease-in-out ${
@@ -134,7 +134,7 @@ export default function UniverseExplorer() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden relative">
           <div className="flex-1 relative overflow-hidden">
             <ImageArea
               image={image}
