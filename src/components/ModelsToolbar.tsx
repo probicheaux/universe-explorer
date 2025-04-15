@@ -254,11 +254,17 @@ function ModelsToolbar({
   scale,
   offset,
 }: ModelsToolbarProps) {
-  // Calculate match percentages and sort models
+  // Filter out models with errors and calculate match percentages
   const sortedModels = useMemo(() => {
     if (!imageDimensions) return models;
 
-    return [...models].sort((a, b) => {
+    // Filter out models with errors
+    const validModels = models.filter((model) => {
+      const result = results[model.id];
+      return result && !result.error;
+    });
+
+    return [...validModels].sort((a, b) => {
       const boxOverlapA = calculateBoxOverlap(
         drawnBoxes,
         results[a.id],
