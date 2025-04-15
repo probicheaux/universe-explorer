@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { chatWithAssistant, ChatMessage } from "@/adapters/openAiAdapter";
+import { getAndCache } from "@/utils/cache";
 
 export async function POST(request: Request) {
   try {
@@ -14,7 +15,10 @@ export async function POST(request: Request) {
     }
 
     const messages: ChatMessage[] = [{ role: "user", content: prompt }];
-    const response = await chatWithAssistant(messages);
+    const response = await getAndCache(
+      `prompt-${prompt}`,
+      async () => await chatWithAssistant(messages)
+    );
 
     if (response.error) {
       return NextResponse.json({ error: response.error }, { status: 500 });

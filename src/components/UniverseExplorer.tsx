@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import ImageArea from "./ImageArea";
 import PromptArea from "./PromptArea";
 import AnnotationToolbar, { TaskType } from "./AnnotationToolbar";
@@ -12,6 +12,7 @@ import Tabs, { TabType } from "./Tabs";
 import { getColorForLabel } from "../utils/colors";
 import api from "@/utils/api";
 import { PromptResponse } from "@/utils/api/prompt";
+import { ModelInfo } from "@/utils/api/inference";
 
 export default function UniverseExplorer() {
   const [image, setImage] = useState<string | undefined>(undefined);
@@ -23,7 +24,9 @@ export default function UniverseExplorer() {
   const [isLoading, setIsLoading] = useState(false);
   const [isPromptLoading, setIsPromptLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("find");
-  const [inferenceResults, setInferenceResults] = useState<any[]>([]);
+  const [inferenceResults, setInferenceResults] = useState<Record<string, any>>(
+    {}
+  );
   const [hideGuides, setHideGuides] = useState(false);
   const [imageDimensions, setImageDimensions] = useState<
     | {
@@ -34,6 +37,8 @@ export default function UniverseExplorer() {
       }
     | undefined
   >(undefined);
+  const [models, setModels] = useState<ModelInfo[]>([]);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   // Generate colors for all classes
   const classColors = useMemo(() => {
@@ -53,7 +58,7 @@ export default function UniverseExplorer() {
   const handleImageChange = (imageData: string) => {
     // Clear bounding boxes when image changes
     setBoxes([]);
-    setInferenceResults([]);
+    setInferenceResults({});
     setImage(imageData);
   };
 
@@ -148,30 +153,56 @@ export default function UniverseExplorer() {
     if (!image) return;
 
     setIsLoading(true);
+    setInferenceResults({});
+    setModels([]);
+
     try {
       // Remove the data:image/jpeg;base64, prefix if present
       const base64Data = image.includes(",") ? image.split(",")[1] : image;
 
-      const response = await api.inference.inferImage(base64Data);
+      // Cleanup previous EventSource if exists
+      if (cleanupRef.current) {
+        cleanupRef.current();
+      }
 
-      console.log("Model inference result:", response);
+      // Start streaming inference
+      const cleanup = api.inference.inferImage(base64Data, {
+        onModels: (newModels) => {
+          setModels(newModels);
+          // Switch to results tab after receiving models
+          setActiveTab("results");
+        },
+        onInference: (modelId, result) => {
+          setInferenceResults((prev) => ({
+            ...prev,
+            [modelId]: result,
+          }));
+        },
+        onError: (modelId, error) => {
+          console.error(`Error with model ${modelId}:`, error);
+          setInferenceResults((prev) => ({
+            ...prev,
+            [modelId]: { error },
+          }));
+        },
+        onComplete: () => {
+          setIsLoading(false);
+        },
+      });
 
-      // Switch to results tab after successful inference
-      setActiveTab("results");
-
-      // For now, we'll just use hardcoded results
-      // In the future, we'll parse the actual response
-      setInferenceResults([response]);
+      cleanupRef.current = cleanup;
     } catch (error) {
       console.error("Error finding model:", error);
-    } finally {
       setIsLoading(false);
     }
   };
 
   const handleModelSelect = (modelId: string) => {
-    console.log("Selected model:", modelId);
-    // In the future, we'll load the specific model's results
+    // Update the results canvas to show the selected model's results
+    const selectedResult = inferenceResults[modelId];
+    if (selectedResult && !selectedResult.error) {
+      setInferenceResults({ [modelId]: selectedResult });
+    }
   };
 
   const canFindModel = image && prompt && boxes.length > 0;
@@ -179,6 +210,15 @@ export default function UniverseExplorer() {
   const handleTaskTypeChange = (newTaskType: TaskType) => {
     setTaskType(newTaskType);
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (cleanupRef.current) {
+        cleanupRef.current();
+      }
+    };
+  }, []);
 
   return (
     <div className="flex flex-col h-full bg-gray-950 text-white relative">
@@ -202,7 +242,12 @@ export default function UniverseExplorer() {
                 isLoading={isPromptLoading}
               />
             ) : (
-              <ModelsToolbar onModelSelect={handleModelSelect} />
+              <ModelsToolbar
+                onModelSelect={handleModelSelect}
+                models={models}
+                results={inferenceResults}
+                isLoading={isLoading}
+              />
             )}
           </div>
         </div>
@@ -219,7 +264,7 @@ export default function UniverseExplorer() {
             />
 
             {/* Tabs for switching between Find and Results */}
-            {image && prompt && inferenceResults.length > 0 && (
+            {image && prompt && Object.keys(inferenceResults).length > 0 && (
               <Tabs
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
@@ -287,7 +332,7 @@ export default function UniverseExplorer() {
             {/* Results Canvas */}
             {image && prompt && activeTab === "results" && imageDimensions && (
               <ResultsCanvas
-                results={inferenceResults}
+                results={Object.values(inferenceResults)}
                 image={image}
                 imageDimensions={imageDimensions}
               />

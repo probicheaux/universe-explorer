@@ -2,7 +2,8 @@ import { redis } from "@/adapters/redisAdapter";
 
 export const getAndCache = async <T>(
   key: string,
-  fn: () => Promise<T>
+  fn: () => Promise<T>,
+  ttl?: number
 ): Promise<T> => {
   const redisClient = await redis();
   const value = await redisClient.get(key);
@@ -15,7 +16,9 @@ export const getAndCache = async <T>(
   console.log(`Cache miss for ${key}`);
 
   const result = await fn();
-  await redisClient.set(key, JSON.stringify(result));
+  await redisClient.set(key, JSON.stringify(result), {
+    EX: ttl ?? 60 * 60 * 24, // 24 hours
+  });
 
   return result;
 };
