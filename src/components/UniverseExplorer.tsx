@@ -76,12 +76,7 @@ export default function UniverseExplorer() {
   const processPrompt = async (promptText: string) => {
     setIsPromptLoading(true);
     try {
-      console.log("=== PROCESS PROMPT START ===");
-      console.log("Processing prompt:", promptText);
-      console.log("Current classes before API call:", classes);
-
       const response = await api.prompt.send(promptText);
-      console.log("Full API response:", JSON.stringify(response, null, 2));
 
       if (response.error) {
         console.error("Error from prompt API:", response.error);
@@ -90,19 +85,13 @@ export default function UniverseExplorer() {
 
       // Check if we have a message property in the response
       if (response && typeof response === "object" && "message" in response) {
-        console.log("Message in response:", response.message);
-
         try {
           // Parse the message as JSON
           const parsedMessage = JSON.parse(response.message as string);
-          console.log("Parsed message:", parsedMessage);
 
           // Extract task and classes
           if (parsedMessage.task && parsedMessage.classes) {
             const { task, classes: newClasses } = parsedMessage;
-            console.log("Extracted task:", task);
-            console.log("Extracted classes:", newClasses);
-            console.log("Current classes before update:", classes);
 
             // Update task type if valid
             if (
@@ -113,7 +102,6 @@ export default function UniverseExplorer() {
               task === "semantic-segmentation" ||
               task === "multimodal"
             ) {
-              console.log("Setting task type to:", task);
               setTaskType(task);
             }
 
@@ -123,42 +111,23 @@ export default function UniverseExplorer() {
               Array.isArray(newClasses) &&
               newClasses.length > 0
             ) {
-              console.log("Setting classes to:", newClasses);
               // Force a state update by creating a new array
               setClasses([...newClasses]);
-              console.log("Classes state updated with:", [...newClasses]);
 
               // Remove boxes that reference classes that no longer exist
               setBoxes((prevBoxes) => {
-                console.log(
-                  "Filtering boxes, current count:",
-                  prevBoxes.length
-                );
                 const filteredBoxes = prevBoxes.filter((box) => {
                   const boxClassExists = newClasses.some(
                     (cls) => cls.toLowerCase() === box.class.toLowerCase()
                   );
                   return boxClassExists;
                 });
-                console.log("Filtered boxes count:", filteredBoxes.length);
                 return filteredBoxes;
               });
 
               // Reset selected class
               setSelectedClass("");
-              console.log("Selected class reset to empty string");
-            } else {
-              console.log("Classes validation failed:", {
-                isDefined: !!newClasses,
-                isArray: Array.isArray(newClasses),
-                length: newClasses?.length,
-              });
             }
-          } else {
-            console.log(
-              "Missing task or classes in parsed message:",
-              parsedMessage
-            );
           }
         } catch (e) {
           console.error("Error parsing message:", e);
@@ -171,8 +140,6 @@ export default function UniverseExplorer() {
         "classes" in response.data
       ) {
         const { task, classes: newClasses } = response.data;
-        console.log("Direct data from API - task:", task);
-        console.log("Direct data from API - classes:", newClasses);
 
         // Update task type if valid
         if (
@@ -183,52 +150,33 @@ export default function UniverseExplorer() {
           task === "semantic-segmentation" ||
           task === "multimodal"
         ) {
-          console.log("Setting task type to:", task);
           setTaskType(task);
         }
 
         // Update classes if valid
         if (newClasses && Array.isArray(newClasses) && newClasses.length > 0) {
-          console.log("Setting classes to:", newClasses);
           // Force a state update by creating a new array
           setClasses([...newClasses]);
-          console.log("Classes state updated with:", [...newClasses]);
 
           // Remove boxes that reference classes that no longer exist
           setBoxes((prevBoxes) => {
-            console.log("Filtering boxes, current count:", prevBoxes.length);
             const filteredBoxes = prevBoxes.filter((box) => {
               const boxClassExists = newClasses.some(
                 (cls) => cls.toLowerCase() === box.class.toLowerCase()
               );
               return boxClassExists;
             });
-            console.log("Filtered boxes count:", filteredBoxes.length);
             return filteredBoxes;
           });
 
           // Reset selected class
           setSelectedClass("");
-          console.log("Selected class reset to empty string");
-        } else {
-          console.log("Classes validation failed:", {
-            isDefined: !!newClasses,
-            isArray: Array.isArray(newClasses),
-            length: newClasses?.length,
-          });
-        }
-      } else {
-        console.log("No valid data found in response");
-        console.log("Response structure:", Object.keys(response));
-        if (response.data) {
-          console.log("Response.data structure:", Object.keys(response.data));
         }
       }
     } catch (error) {
       console.error("Error processing prompt response:", error);
     } finally {
       setIsPromptLoading(false);
-      console.log("=== PROCESS PROMPT END ===");
     }
   };
 
@@ -249,17 +197,7 @@ export default function UniverseExplorer() {
         const boxClassExists = newClasses.some(
           (cls) => cls.toLowerCase() === box.class.toLowerCase()
         );
-        console.log("Box class check:", {
-          boxClass: box.class,
-          availableClasses: newClasses,
-          exists: boxClassExists,
-        });
         return boxClassExists;
-      });
-      console.log("Boxes update:", {
-        before: prevBoxes.length,
-        after: filteredBoxes.length,
-        keptClasses: filteredBoxes.map((box) => box.class),
       });
       return filteredBoxes;
     });
@@ -290,7 +228,6 @@ export default function UniverseExplorer() {
 
       const cleanup = api.inference.inferImage(base64Data, {
         onModels: (newModels) => {
-          console.log("Received models:", newModels);
           currentModels = newModels;
           setModels(newModels);
           setActiveTab("results");
@@ -312,8 +249,6 @@ export default function UniverseExplorer() {
           pendingResults = [];
         },
         onInference: (modelId, result) => {
-          console.log("Received inference result for model:", modelId, result);
-
           if (!modelId) {
             // Store the result temporarily if we don't have models yet
             if (currentModels.length === 0) {
@@ -325,7 +260,6 @@ export default function UniverseExplorer() {
               );
               if (modelIndex !== -1) {
                 const fallbackModelId = currentModels[modelIndex].id;
-                console.log("Using fallback modelId:", fallbackModelId);
                 setInferenceResults((prev) => ({
                   ...prev,
                   [fallbackModelId]: result,
@@ -343,7 +277,6 @@ export default function UniverseExplorer() {
           console.error(`Error with model ${modelId}:`, error);
         },
         onComplete: () => {
-          console.log("Inference complete");
           setIsLoading(false);
         },
       });
@@ -362,8 +295,6 @@ export default function UniverseExplorer() {
         return;
       }
 
-      console.log("handleModelSelect called with modelId:", modelId);
-
       // Mark that the user has manually selected a model
       setUserSelectedModel(true);
 
@@ -372,20 +303,15 @@ export default function UniverseExplorer() {
 
       // Update the results canvas to show the selected model's results
       const selectedResult = inferenceResults[modelId];
-      console.log("Selected result:", selectedResult);
 
       if (selectedResult && !selectedResult.error) {
-        console.log("Setting inference results to show only this model");
         // Don't clear other results, just update the selected model
         setSelectedModel(modelId);
 
         // Only switch to results tab if we're not already there
         if (activeTab !== "results") {
-          console.log("Switching to results tab");
           setActiveTab("results");
         }
-      } else {
-        console.log("No valid result for this model or has error");
       }
     },
     [inferenceResults, activeTab]
@@ -408,12 +334,12 @@ export default function UniverseExplorer() {
 
   // Log activeTab changes
   useEffect(() => {
-    console.log("activeTab changed to:", activeTab);
+    // No logging needed
   }, [activeTab]);
 
   // Log classes changes
   useEffect(() => {
-    console.log("Classes updated:", classes);
+    // No logging needed
   }, [classes]);
 
   // Select the first model by default when the order changes, but only if user hasn't manually selected
@@ -435,12 +361,6 @@ export default function UniverseExplorer() {
           <div className="w-64 h-full">
             {/* Debug log */}
             {(() => {
-              console.log(
-                "Rendering toolbar with activeTab:",
-                activeTab,
-                "classes:",
-                classes
-              );
               return null;
             })()}
             {activeTab === "find" ? (

@@ -43,16 +43,9 @@ export default function AnnotationToolbar({
   const [error, setError] = useState<string | null>(null);
   const [localClasses, setLocalClasses] = useState<string[]>(classes || []);
 
-  // Update localClasses when classes prop changes
   useEffect(() => {
-    console.log("AnnotationToolbar: classes prop changed to:", classes);
-    if (classes) {
-      setLocalClasses(classes);
-    }
+    setLocalClasses(classes || []);
   }, [classes]);
-
-  // Log when classes prop changes
-  console.log("AnnotationToolbar received classes:", classes);
 
   const handleAddClass = () => {
     const trimmedClass = newClass.trim();
@@ -92,12 +85,9 @@ export default function AnnotationToolbar({
   };
 
   const handleClassClick = (className: string) => {
-    if (onClassSelect) {
-      onClassSelect(className === selectedClass ? "" : className);
-    }
+    onClassSelect?.(className);
   };
 
-  // Ensure we have at least some default classes if none are provided
   const displayClasses =
     localClasses.length > 0 ? localClasses : ["person", "car", "truck"];
 

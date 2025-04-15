@@ -49,14 +49,11 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
 
         setIsLoading(true);
         try {
-          console.log(`Fetching suggestions for: "${prompt}"`);
           const data = await api.prompt.suggestions.fetch(prompt);
-          console.log(`Received ${data.length} suggestions:`, data);
           setSuggestions(data);
           setShowSuggestions(data.length > 0);
           setSelectedIndex(-1);
         } catch (error) {
-          console.error("Error fetching suggestions:", error);
           setSuggestions([]);
           setShowSuggestions(false);
         } finally {
@@ -70,18 +67,15 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
 
     const handleSubmit = () => {
       if (prompt.trim()) {
-        console.log("Submitting prompt:", prompt);
         onComplete({ prompt });
         setShowSuggestions(false);
       }
     };
 
     const handleSuggestionClick = (suggestion: PromptSuggestion) => {
-      console.log("Suggestion clicked:", suggestion);
       setIsSuggestionClick(true);
       setPrompt(suggestion.text);
       setShowSuggestions(false);
-      console.log("Calling onComplete with:", suggestion.text);
       onComplete({ prompt: suggestion.text });
 
       // Reset the flag after a short delay
@@ -113,10 +107,6 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
         case "Enter":
           e.preventDefault();
           if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
-            console.log(
-              "Enter pressed with suggestion:",
-              suggestions[selectedIndex]
-            );
             handleSuggestionClick(suggestions[selectedIndex]);
           } else {
             handleSubmit();
@@ -130,27 +120,16 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
     };
 
     const handleBlur = (e: React.FocusEvent) => {
-      console.log("Blur event:", e);
-
-      // Skip blur handling if a suggestion is being clicked
+      // Skip if we're clicking a suggestion
       if (isSuggestionClick) {
-        console.log("Skipping blur handling due to suggestion click");
         return;
       }
 
-      // Check if the related target is within the textarea or suggestions
-      if (
-        !e.currentTarget.contains(e.relatedTarget as Node) &&
-        !suggestionsRef.current?.contains(e.relatedTarget as Node)
-      ) {
-        // Add a small delay to allow click events to process
-        setTimeout(() => {
-          if (!document.activeElement?.closest(".suggestions-dropdown")) {
-            console.log("Blur outside component, calling onBlur");
-            onBlur?.();
-            setShowSuggestions(false);
-          }
-        }, 100);
+      // Check if the click is outside the component
+      const relatedTarget = e.relatedTarget as HTMLElement;
+      if (!relatedTarget || !suggestionsRef.current?.contains(relatedTarget)) {
+        setShowSuggestions(false);
+        onBlur?.();
       }
     };
 
