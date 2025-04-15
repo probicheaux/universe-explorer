@@ -154,17 +154,19 @@ const ModelCard = React.memo(
 
           {/* Top classes */}
           {topClasses.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {topClasses.map((cls, index) => (
-                <span
-                  key={index}
-                  className="text-xs px-1.5 py-0.5 rounded bg-gray-700/50 text-gray-300"
-                >
-                  {cls.name} ({formatNumber(cls.count)})
-                </span>
-              ))}
+            <div className="flex flex-col gap-1">
+              <div className="flex flex-wrap gap-1 max-h-[24px] overflow-hidden">
+                {topClasses.map((cls, index) => (
+                  <span
+                    key={index}
+                    className="text-xs px-1.5 py-0.5 rounded bg-gray-700/50 text-gray-300 whitespace-nowrap"
+                  >
+                    {cls.name} ({formatNumber(cls.count)})
+                  </span>
+                ))}
+              </div>
               {model.classCounts && model.classCounts.length > 3 && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-gray-700/50 text-gray-300">
+                <span className="text-xs px-1.5 py-0.5 rounded bg-gray-700/50 text-gray-300 whitespace-nowrap w-fit">
                   +{model.classCounts.length - 3} more
                 </span>
               )}
@@ -172,10 +174,10 @@ const ModelCard = React.memo(
           )}
 
           {/* Model stats */}
-          <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-400">
+          <div className="flex flex-wrap items-center gap-2 mt-1 text-[10px] text-gray-400">
             {model.universeStats && (
               <>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 whitespace-nowrap">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-3 w-3"
@@ -191,7 +193,7 @@ const ModelCard = React.memo(
                   </svg>
                   {formatNumber(model.universeStats.totals.views)}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 whitespace-nowrap">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-3 w-3"
@@ -209,7 +211,7 @@ const ModelCard = React.memo(
               </>
             )}
             {model.universe?.stars !== undefined && (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 whitespace-nowrap">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-3 w-3"
@@ -222,7 +224,7 @@ const ModelCard = React.memo(
               </div>
             )}
             {model.images && (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 whitespace-nowrap">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-3 w-3"
@@ -243,19 +245,17 @@ const ModelCard = React.memo(
           {/* Results info */}
           {isComplete && result.predictions && (
             <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-gray-700">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="text-xs text-gray-400 whitespace-nowrap">
-                    {result.predictions.length} detection
-                    {result.predictions.length !== 1 ? "s" : ""}
-                  </div>
-                  <div className="text-xs text-gray-400 whitespace-nowrap">
-                    {(result.time * 1000).toFixed(0)}ms
-                  </div>
+              <div className="flex items-center gap-2">
+                <div className="text-xs text-gray-400 whitespace-nowrap">
+                  {result.predictions.length} detection
+                  {result.predictions.length !== 1 ? "s" : ""}
                 </div>
-                <div className="text-xs font-medium px-2 py-0.5 rounded bg-blue-900/50 text-blue-400 whitespace-nowrap ml-2 flex-shrink-0">
-                  {boxOverlap.toFixed(1)}% match
+                <div className="text-xs text-gray-400 whitespace-nowrap">
+                  {(result.time * 1000).toFixed(0)}ms
                 </div>
+              </div>
+              <div className="text-xs font-medium px-2 py-0.5 rounded bg-blue-900/50 text-blue-400 whitespace-nowrap w-fit">
+                {boxOverlap.toFixed(1)}% match
               </div>
             </div>
           )}
