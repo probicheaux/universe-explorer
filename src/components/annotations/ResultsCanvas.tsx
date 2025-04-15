@@ -116,23 +116,6 @@ export default function ResultsCanvas({
         const scaledWidth = box.width * scale.x;
         const scaledHeight = box.height * scale.y;
 
-        console.log(`Box ${index} transformation:`, {
-          original: {
-            x: box.x,
-            y: box.y,
-            width: box.width,
-            height: box.height,
-          },
-          scale,
-          offset,
-          scaled: {
-            x: scaledX,
-            y: scaledY,
-            width: scaledWidth,
-            height: scaledHeight,
-          },
-        });
-
         return (
           <BoundingBox
             key={index}

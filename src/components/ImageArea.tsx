@@ -103,15 +103,6 @@ export default function ImageArea({
         containerY: containerRect.top,
       };
 
-      console.log(
-        "y",
-        y,
-        "containerRect.top",
-        containerRect.top,
-        "containerY",
-        containerRect.top + y
-      );
-
       // Only update if dimensions have changed
       if (
         !lastDimensionsRef.current ||
