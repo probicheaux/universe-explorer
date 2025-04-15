@@ -45,7 +45,7 @@ export default function UniverseExplorer() {
 
   // Generate colors for all classes
   const classColors = useMemo(() => {
-    return classes.reduce((acc, className) => {
+    return (classes || []).reduce((acc, className) => {
       acc[className] = getColorForLabel(className);
       return acc;
     }, {} as Record<string, string>);

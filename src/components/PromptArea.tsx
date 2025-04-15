@@ -57,11 +57,22 @@ export default function PromptArea({
     }, 100);
   };
 
+  const handleContainerClick = (e: React.MouseEvent) => {
+    // Only handle clicks when not in editing mode and when editable
+    if (!isEditing && editable) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log("PromptArea: Container clicked, setting isEditing to true");
+      setIsEditing(true);
+    }
+  };
+
   return (
     <div
       className={`p-6 border-t border-gray-800 transition-all duration-300 ${
         isEditing ? "bg-gray-900/80" : "bg-gray-900/20 backdrop-blur-md"
       }`}
+      onClick={handleContainerClick}
     >
       <div
         ref={containerRef}
@@ -78,12 +89,6 @@ export default function PromptArea({
               : "opacity-100 transform translate-y-0",
             editable ? "cursor-pointer" : "cursor-default"
           )}
-          onClick={() => {
-            console.log(
-              "PromptArea: Static view clicked, setting isEditing to true"
-            );
-            editable && setIsEditing(true);
-          }}
         >
           <h3 className="text-lg font-semibold text-gray-200 mb-2">
             What do you want to understand about your image?
