@@ -18,6 +18,7 @@ interface ModelsToolbarProps {
   };
   scale: { x: number; y: number };
   offset: { x: number; y: number };
+  selectedModel?: string;
 }
 
 // Memoize the individual model card to prevent unnecessary re-renders
@@ -27,11 +28,13 @@ const ModelCard = React.memo(
     result,
     onSelect,
     boxOverlap,
+    isSelected,
   }: {
     model: ModelInfo;
     result: InferImageResponse | undefined;
     onSelect: (modelId: string) => void;
     boxOverlap: number;
+    isSelected?: boolean;
   }) => {
     const hasError = result?.error;
     const isComplete = result && !hasError;
@@ -58,13 +61,21 @@ const ModelCard = React.memo(
 
     return (
       <div
-        className="group h-[220px] flex flex-col bg-gray-800/50 rounded-md border border-gray-700 hover:bg-gray-700/50 transition-all cursor-pointer overflow-visible"
+        className={`group h-[220px] flex flex-col rounded-md border transition-all cursor-pointer overflow-visible ${
+          isSelected
+            ? "bg-blue-900/30 border-blue-500/50 shadow-lg shadow-blue-500/20"
+            : "bg-gray-800/50 border-gray-700 hover:bg-gray-700/50"
+        }`}
         onClick={handleClick}
       >
         <div className="flex flex-col gap-2 p-3 h-full overflow-visible">
           {/* Header with model name and status */}
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-gray-200 truncate flex-1 mr-2">
+            <span
+              className={`text-sm font-medium truncate flex-1 mr-2 ${
+                isSelected ? "text-blue-200" : "text-gray-200"
+              }`}
+            >
               {model.name}
             </span>
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -84,7 +95,9 @@ const ModelCard = React.memo(
               ) : isComplete ? (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 text-green-400"
+                  className={`h-4 w-4 ${
+                    isSelected ? "text-blue-400" : "text-green-400"
+                  }`}
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -98,7 +111,9 @@ const ModelCard = React.memo(
                 <div className="animate-spin">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 text-gray-400"
+                    className={`h-4 w-4 ${
+                      isSelected ? "text-blue-400" : "text-gray-400"
+                    }`}
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -253,6 +268,7 @@ function ModelsToolbar({
   imageDimensions,
   scale,
   offset,
+  selectedModel,
 }: ModelsToolbarProps) {
   // Filter out models with errors and calculate match percentages
   const sortedModels = useMemo(() => {
@@ -293,6 +309,7 @@ function ModelsToolbar({
     ({ index, style }: { index: number; style: React.CSSProperties }) => {
       const model = sortedModels[index];
       const modelResult = results[model.id];
+      const isSelected = selectedModel === model.id;
       return (
         <div style={{ ...style, paddingBottom: "12px" }}>
           <ModelCard
@@ -304,6 +321,7 @@ function ModelsToolbar({
                 ? calculateBoxOverlap(drawnBoxes, modelResult, scale, offset)
                 : 0
             }
+            isSelected={isSelected}
           />
         </div>
       );
@@ -316,6 +334,7 @@ function ModelsToolbar({
       imageDimensions,
       scale,
       offset,
+      selectedModel,
     ]
   );
 
