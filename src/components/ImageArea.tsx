@@ -73,7 +73,7 @@ export default function ImageArea({
 
     const updateDimensions = () => {
       const containerRect = containerRef.current?.getBoundingClientRect();
-      if (!containerRect) return;
+      if (!containerRect) return undefined;
 
       // Calculate the actual rendered dimensions based on object-contain behavior
       const containerRatio = containerRect.width / containerRect.height;
