@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import ImageArea from "./ImageArea";
 import PromptArea from "./PromptArea";
-import AnnotationToolbar from "./AnnotationToolbar";
+import AnnotationToolbar, { TaskType } from "./AnnotationToolbar";
 import ModelsToolbar from "./ModelsToolbar";
 import BoundingBoxCanvas from "./annotations/BoundingBoxCanvas";
 import ResultsCanvas from "./annotations/ResultsCanvas";
@@ -11,15 +11,17 @@ import FindModelButton from "./FindModelButton";
 import Tabs, { TabType } from "./Tabs";
 import { getColorForLabel } from "../utils/colors";
 import api from "@/utils/api";
+import { PromptResponse } from "@/utils/api/prompt";
 
 export default function UniverseExplorer() {
   const [image, setImage] = useState<string | undefined>(undefined);
   const [prompt, setPrompt] = useState<string>("");
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [classes, setClasses] = useState<string[]>(["person", "car", "truck"]);
-  const [taskType] = useState<string>("Object Detection");
+  const [taskType, setTaskType] = useState<TaskType>("object-detection");
   const [boxes, setBoxes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPromptLoading, setIsPromptLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("find");
   const [inferenceResults, setInferenceResults] = useState<any[]>([]);
   const [hideGuides, setHideGuides] = useState(false);
@@ -57,14 +59,37 @@ export default function UniverseExplorer() {
 
   const handlePromptChange = async (newPrompt: string) => {
     setPrompt(newPrompt);
+    setIsPromptLoading(true);
 
-    const response = await api.prompt.send(newPrompt);
-    if (response.error) {
-      console.error("Error from prompt API:", response.error);
-      return;
+    try {
+      const response = await api.prompt.send(newPrompt);
+      if (response.error) {
+        console.error("Error from prompt API:", response.error);
+        return;
+      }
+
+      if (response.data) {
+        const { task, classes: newClasses } = response.data;
+        // Validate that the task is a valid TaskType
+        if (
+          task === "object-detection" ||
+          task === "instance-segmentation" ||
+          task === "classification" ||
+          task === "keypoint-detection" ||
+          task === "semantic-segmentation" ||
+          task === "multimodal"
+        ) {
+          setTaskType(task);
+        }
+        setClasses(newClasses);
+        // Reset selected class since we have new classes
+        setSelectedClass("");
+      }
+    } catch (error) {
+      console.error("Error processing prompt response:", error);
+    } finally {
+      setIsPromptLoading(false);
     }
-
-    console.log("Response from assistant:", response.data?.message);
   };
 
   const handleClassSelect = (className: string) => {
@@ -111,6 +136,10 @@ export default function UniverseExplorer() {
 
   const canFindModel = image && prompt && boxes.length > 0;
 
+  const handleTaskTypeChange = (newTaskType: TaskType) => {
+    setTaskType(newTaskType);
+  };
+
   return (
     <div className="flex flex-col h-full bg-gray-950 text-white relative">
       <div className="flex-1 flex overflow-hidden relative">
@@ -124,11 +153,13 @@ export default function UniverseExplorer() {
             {activeTab === "find" ? (
               <AnnotationToolbar
                 taskType={taskType}
+                onTaskTypeChange={handleTaskTypeChange}
                 classes={classes}
                 onClassesChange={handleClassesChange}
                 selectedClass={selectedClass}
                 onClassSelect={handleClassSelect}
                 classColors={classColors}
+                isLoading={isPromptLoading}
               />
             ) : (
               <ModelsToolbar onModelSelect={handleModelSelect} />

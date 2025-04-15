@@ -1,21 +1,42 @@
 import { useState } from "react";
 
+export type TaskType =
+  | "object-detection"
+  | "instance-segmentation"
+  | "classification"
+  | "keypoint-detection"
+  | "semantic-segmentation"
+  | "multimodal";
+
+const TASK_DISPLAY_NAMES: Record<TaskType, string> = {
+  "object-detection": "Object Detection",
+  "instance-segmentation": "Instance Segmentation",
+  classification: "Classification",
+  "keypoint-detection": "Keypoint Detection",
+  "semantic-segmentation": "Semantic Segmentation",
+  multimodal: "Multimodal",
+};
+
 interface AnnotationToolbarProps {
-  taskType?: string;
+  taskType: TaskType;
+  onTaskTypeChange?: (task: TaskType) => void;
   classes?: string[];
   onClassesChange?: (classes: string[]) => void;
   selectedClass?: string;
   onClassSelect?: (className: string) => void;
   classColors?: Record<string, string>;
+  isLoading?: boolean;
 }
 
 export default function AnnotationToolbar({
-  taskType = "Object Detection",
+  taskType = "object-detection",
+  onTaskTypeChange,
   classes = ["person", "car", "truck"],
   onClassesChange,
   selectedClass = "",
   onClassSelect,
   classColors = {},
+  isLoading = false,
 }: AnnotationToolbarProps) {
   const [newClass, setNewClass] = useState("");
   const [isAddingClass, setIsAddingClass] = useState(false);
@@ -67,18 +88,33 @@ export default function AnnotationToolbar({
       {/* Task Type */}
       <div className="mb-4">
         <h3 className="text-sm font-medium text-gray-400 mb-1">Task</h3>
-        <div className="bg-gray-800/50 px-3 py-1.5 rounded-md text-gray-200 text-sm">
-          {taskType}
-        </div>
+        <select
+          value={taskType}
+          onChange={(e) => onTaskTypeChange?.(e.target.value as TaskType)}
+          disabled={isLoading}
+          className="w-full bg-gray-800/50 px-3 py-1.5 rounded-md text-gray-200 text-sm border border-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-600"
+        >
+          {Object.entries(TASK_DISPLAY_NAMES).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Classes */}
-      <div className="mb-4">
+      <div className="mb-4 relative">
+        {isLoading && (
+          <div className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center rounded-md z-10">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400"></div>
+          </div>
+        )}
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-sm font-medium text-gray-400">Classes</h3>
           <button
             onClick={() => setIsAddingClass(true)}
             className="text-xs text-gray-400 hover:text-gray-300 transition-colors"
+            disabled={isLoading}
           >
             + Add
           </button>
