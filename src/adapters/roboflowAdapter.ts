@@ -2,8 +2,8 @@ import axios, { AxiosError } from "axios";
 import { getEnv } from "@/utils/environment";
 
 const BASE_URL = "https://serverless.roboflow.com/";
-const MAX_RETRIES = 5;
-const INITIAL_RETRY_DELAY = 1000; // 1 second
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY = 500; // .5 second
 
 type BoundingBoxPrediction = {
   class: string;
