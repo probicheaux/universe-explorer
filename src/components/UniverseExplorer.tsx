@@ -81,7 +81,27 @@ export default function UniverseExplorer() {
         ) {
           setTaskType(task);
         }
+        // Update classes and remove invalid boxes
         setClasses(newClasses);
+        setBoxes((prevBoxes) => {
+          const filteredBoxes = prevBoxes.filter((box) => {
+            const boxClassExists = newClasses.some(
+              (cls) => cls.toLowerCase() === box.class.toLowerCase()
+            );
+            console.log("Box class check:", {
+              boxClass: box.class,
+              availableClasses: newClasses,
+              exists: boxClassExists,
+            });
+            return boxClassExists;
+          });
+          console.log("Boxes update:", {
+            before: prevBoxes.length,
+            after: filteredBoxes.length,
+            keptClasses: filteredBoxes.map((box) => box.class),
+          });
+          return filteredBoxes;
+        });
         // Reset selected class since we have new classes
         setSelectedClass("");
       }
@@ -98,6 +118,26 @@ export default function UniverseExplorer() {
 
   const handleClassesChange = (newClasses: string[]) => {
     setClasses(newClasses);
+    // Remove boxes that reference classes that no longer exist
+    setBoxes((prevBoxes) => {
+      const filteredBoxes = prevBoxes.filter((box) => {
+        const boxClassExists = newClasses.some(
+          (cls) => cls.toLowerCase() === box.class.toLowerCase()
+        );
+        console.log("Box class check:", {
+          boxClass: box.class,
+          availableClasses: newClasses,
+          exists: boxClassExists,
+        });
+        return boxClassExists;
+      });
+      console.log("Boxes update:", {
+        before: prevBoxes.length,
+        after: filteredBoxes.length,
+        keptClasses: filteredBoxes.map((box) => box.class),
+      });
+      return filteredBoxes;
+    });
   };
 
   const handleBoxesChange = (newBoxes: any[]) => {

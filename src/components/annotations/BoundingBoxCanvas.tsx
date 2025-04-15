@@ -7,21 +7,23 @@ interface Point {
   y: number;
 }
 
-interface BoundingBoxData {
-  start: Point;
-  end: Point;
-  label: string;
+interface BoundingBoxPromptData {
+  class: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
   color?: string;
 }
 
 interface BoundingBoxCanvasProps {
   selectedClass: string;
-  onBoxesChange?: (boxes: BoundingBoxData[]) => void;
+  onBoxesChange?: (boxes: BoundingBoxPromptData[]) => void;
   availableClasses: string[];
   onClassSelect: (className: string) => void;
   classColors: Record<string, string>;
   className?: string;
-  boxes: BoundingBoxData[];
+  boxes: BoundingBoxPromptData[];
   hideGuides?: boolean;
 }
 
@@ -37,10 +39,14 @@ export default function BoundingBoxCanvas({
 }: BoundingBoxCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [currentBox, setCurrentBox] = useState<BoundingBoxData | null>(null);
+  const [currentBox, setCurrentBox] = useState<BoundingBoxPromptData | null>(
+    null
+  );
   const [mousePosition, setMousePosition] = useState<Point>({ x: 0, y: 0 });
   const [showClassMenu, setShowClassMenu] = useState(false);
-  const [pendingBox, setPendingBox] = useState<BoundingBoxData | null>(null);
+  const [pendingBox, setPendingBox] = useState<BoundingBoxPromptData | null>(
+    null
+  );
   const [menuPosition, setMenuPosition] = useState<Point>({ x: 0, y: 0 });
   const [selectedBoxIndex, setSelectedBoxIndex] = useState<number | null>(null);
   const [isHoveringBox, setIsHoveringBox] = useState(false);
@@ -53,7 +59,9 @@ export default function BoundingBoxCanvas({
   const [moveStartPosition, setMoveStartPosition] = useState<Point | null>(
     null
   );
-  const [originalBox, setOriginalBox] = useState<BoundingBoxData | null>(null);
+  const [originalBox, setOriginalBox] = useState<BoundingBoxPromptData | null>(
+    null
+  );
 
   // Use a ref to track the current mouse position during drawing
   const currentMousePositionRef = useRef<Point>({ x: 0, y: 0 });
@@ -62,7 +70,7 @@ export default function BoundingBoxCanvas({
   const isDrawingRef = useRef(false);
 
   // Use a ref to track the current box being drawn
-  const currentBoxRef = useRef<BoundingBoxData | null>(null);
+  const currentBoxRef = useRef<BoundingBoxPromptData | null>(null);
 
   const getRelativeCoordinates = (e: React.MouseEvent): Point => {
     if (!canvasRef.current) return { x: 0, y: 0 };
@@ -101,16 +109,24 @@ export default function BoundingBoxCanvas({
     // If we have a selected class, use it
     if (selectedClass) {
       const newBox = {
-        start,
-        end: start,
-        label: selectedClass,
+        class: selectedClass,
+        x: start.x,
+        y: start.y,
+        width: 0,
+        height: 0,
         color: classColors[selectedClass],
       };
       currentBoxRef.current = newBox;
       setCurrentBox(newBox);
     } else {
       // Otherwise, create a temporary box with a placeholder label
-      const newBox = { start, end: start, label: "Select class..." };
+      const newBox = {
+        class: "Select class...",
+        x: start.x,
+        y: start.y,
+        width: 0,
+        height: 0,
+      };
       currentBoxRef.current = newBox;
       setCurrentBox(newBox);
     }
@@ -130,9 +146,12 @@ export default function BoundingBoxCanvas({
 
     // If we're drawing, update the current box directly
     if (isDrawingRef.current && currentBoxRef.current) {
+      const width = position.x - currentBoxRef.current.x;
+      const height = position.y - currentBoxRef.current.y;
       const updatedBox = {
         ...currentBoxRef.current,
-        end: position,
+        width,
+        height,
       };
       currentBoxRef.current = updatedBox;
       setCurrentBox(updatedBox);
@@ -150,14 +169,8 @@ export default function BoundingBoxCanvas({
 
       const updatedBox = {
         ...originalBox,
-        start: {
-          x: originalBox.start.x + dx,
-          y: originalBox.start.y + dy,
-        },
-        end: {
-          x: originalBox.end.x + dx,
-          y: originalBox.end.y + dy,
-        },
+        x: originalBox.x + dx,
+        y: originalBox.y + dy,
       };
 
       const newBoxes = [...boxes];
@@ -177,27 +190,33 @@ export default function BoundingBoxCanvas({
       // Update the appropriate corner based on the resize handle
       switch (resizeHandle) {
         case "nw":
-          updatedBox.start = { x: position.x, y: position.y };
+          updatedBox.width = originalBox.width - (position.x - originalBox.x);
+          updatedBox.height = originalBox.height - (position.y - originalBox.y);
+          updatedBox.x = position.x;
+          updatedBox.y = position.y;
           break;
         case "ne":
-          updatedBox.start = { x: originalBox.start.x, y: position.y };
-          updatedBox.end = { x: position.x, y: originalBox.end.y };
+          updatedBox.width = position.x - originalBox.x;
+          updatedBox.height = originalBox.height - (position.y - originalBox.y);
+          updatedBox.y = position.y;
           break;
         case "sw":
-          updatedBox.start = { x: position.x, y: originalBox.start.y };
-          updatedBox.end = { x: originalBox.end.x, y: position.y };
+          updatedBox.width = originalBox.width - (position.x - originalBox.x);
+          updatedBox.height = position.y - originalBox.y;
+          updatedBox.x = position.x;
           break;
         case "se":
-          updatedBox.end = { x: position.x, y: position.y };
+          updatedBox.width = position.x - originalBox.x;
+          updatedBox.height = position.y - originalBox.y;
           break;
       }
 
       // Ensure the box has a minimum size
       const minSize = 10;
-      const width = Math.abs(updatedBox.end.x - updatedBox.start.x);
-      const height = Math.abs(updatedBox.end.y - updatedBox.start.y);
-
-      if (width < minSize || height < minSize) {
+      if (
+        Math.abs(updatedBox.width) < minSize ||
+        Math.abs(updatedBox.height) < minSize
+      ) {
         return; // Don't update if the box would be too small
       }
 
@@ -215,18 +234,27 @@ export default function BoundingBoxCanvas({
     if (isDrawingRef.current && currentBoxRef.current) {
       // Only add box if it has some size
       if (
-        Math.abs(currentBoxRef.current.end.x - currentBoxRef.current.start.x) >
-          5 &&
-        Math.abs(currentBoxRef.current.end.y - currentBoxRef.current.start.y) >
-          5
+        Math.abs(currentBoxRef.current.width) > 5 &&
+        Math.abs(currentBoxRef.current.height) > 5
       ) {
+        // Normalize negative dimensions
+        const box = { ...currentBoxRef.current };
+        if (box.width < 0) {
+          box.x += box.width;
+          box.width = Math.abs(box.width);
+        }
+        if (box.height < 0) {
+          box.y += box.height;
+          box.height = Math.abs(box.height);
+        }
+
         // If we have a selected class, add the box directly
         if (selectedClass) {
-          const newBoxes = [...boxes, currentBoxRef.current];
+          const newBoxes = [...boxes, box];
           onBoxesChange?.(newBoxes);
         } else {
           // Otherwise, show the class selection menu
-          setPendingBox(currentBoxRef.current);
+          setPendingBox(box);
 
           // Position the menu right next to the cursor
           setMenuPosition({
@@ -264,7 +292,7 @@ export default function BoundingBoxCanvas({
       // Update the box with the selected class
       const updatedBox = {
         ...pendingBox,
-        label: className,
+        class: className,
         color: classColors[className],
       };
       const newBoxes = [...boxes, updatedBox];
@@ -300,9 +328,9 @@ export default function BoundingBoxCanvas({
     // Get the box position for menu placement
     if (canvasRef.current && boxes[index]) {
       const box = boxes[index];
-      const left = Math.min(box.start.x, box.end.x);
-      const top = Math.min(box.start.y, box.end.y);
-      const width = Math.abs(box.end.x - box.start.x);
+      const left = Math.min(box.x, box.x + box.width);
+      const top = Math.min(box.y, box.y + box.height);
+      const width = Math.abs(box.x + box.width - box.x);
 
       // Position menu to the right of the box
       setMenuPosition({
@@ -326,7 +354,7 @@ export default function BoundingBoxCanvas({
       const newBoxes = [...boxes];
       newBoxes[selectedBoxIndex] = {
         ...newBoxes[selectedBoxIndex],
-        label: className,
+        class: className,
         color: classColors[className],
       };
       onBoxesChange?.(newBoxes);
@@ -405,9 +433,9 @@ export default function BoundingBoxCanvas({
       {boxes.map((box, index) => (
         <BoundingBox
           key={index}
-          start={box.start}
-          end={box.end}
-          label={box.label}
+          start={{ x: box.x, y: box.y }}
+          end={{ x: box.x + box.width, y: box.y + box.height }}
+          label={box.class}
           color={box.color}
           isSelected={index === selectedBoxIndex}
           onHover={handleBoxHover}
@@ -421,9 +449,12 @@ export default function BoundingBoxCanvas({
       {/* Current Box Being Drawn */}
       {currentBox && (
         <BoundingBox
-          start={currentBox.start}
-          end={currentBox.end}
-          label={currentBox.label}
+          start={{ x: currentBox.x, y: currentBox.y }}
+          end={{
+            x: currentBox.x + currentBox.width,
+            y: currentBox.y + currentBox.height,
+          }}
+          label={currentBox.class}
           color={currentBox.color}
           isSelected={false}
           onHover={undefined}
@@ -437,9 +468,12 @@ export default function BoundingBoxCanvas({
       {/* Pending Box (when no class is selected) */}
       {pendingBox && !currentBox && (
         <BoundingBox
-          start={pendingBox.start}
-          end={pendingBox.end}
-          label={pendingBox.label}
+          start={{ x: pendingBox.x, y: pendingBox.y }}
+          end={{
+            x: pendingBox.x + pendingBox.width,
+            y: pendingBox.y + pendingBox.height,
+          }}
+          label={pendingBox.class}
           color={pendingBox.color}
           isSelected={false}
           onHover={undefined}
