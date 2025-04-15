@@ -81,9 +81,10 @@ export default function PromptArea({
         <div
           className={`absolute inset-0 transition-all duration-300 ${
             isEditing
-              ? "opacity-100 transform translate-y-0"
+              ? "opacity-100 transform translate-y-0 z-10"
               : "opacity-0 transform -translate-y-2 pointer-events-none"
           }`}
+          style={{ zIndex: isEditing ? 10 : "auto" }}
         >
           <PromptInput
             ref={inputRef}
