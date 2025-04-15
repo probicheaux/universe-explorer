@@ -30,7 +30,6 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
 
     const handleSubmit = () => {
       if (prompt.trim()) {
-        onSubmit(prompt);
         onComplete({ prompt });
       }
     };
@@ -45,7 +44,6 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
     const handleBlur = (e: React.FocusEvent) => {
       // Check if the related target is within the textarea
       if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-        handleSubmit();
         onBlur?.();
       }
     };
