@@ -101,7 +101,12 @@ export async function POST(request: NextRequest) {
 
       // Send models data first
       await writer.write(
-        encoder.encode(createStreamMessage("models", { models: topModels }))
+        encoder.encode(
+          createStreamMessage("models", {
+            models: topModels,
+            totalInferences: topModels.length,
+          })
+        )
       );
 
       // Process inferences in batches with controlled concurrency

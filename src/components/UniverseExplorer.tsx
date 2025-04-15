@@ -9,6 +9,7 @@ import BoundingBoxCanvas from "./annotations/BoundingBoxCanvas";
 import ResultsCanvas from "./annotations/ResultsCanvas";
 import FindModelButton from "./FindModelButton";
 import Tabs, { TabType } from "./Tabs";
+import LoadingIndicator from "./LoadingIndicator";
 import { getColorForLabel } from "../utils/colors";
 import api from "@/utils/api";
 import { ModelInfo } from "@/utils/api/inference";
@@ -42,6 +43,8 @@ export default function UniverseExplorer() {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [models, setModels] = useState<ModelInfo[]>([]);
   const cleanupRef = useRef<(() => void) | null>(null);
+  const [inferenceProgress, setInferenceProgress] = useState(0);
+  const [totalInferences, setTotalInferences] = useState(0);
 
   // Generate colors for all classes
   const classColors = useMemo(() => {
@@ -216,6 +219,8 @@ export default function UniverseExplorer() {
     setModels([]);
     setSelectedModel(null);
     setUserSelectedModel(false);
+    setInferenceProgress(0);
+    setTotalInferences(0);
 
     try {
       const base64Data = image.includes(",") ? image.split(",")[1] : image;
@@ -228,9 +233,10 @@ export default function UniverseExplorer() {
       let pendingResults: { result: any; index: number }[] = [];
 
       const cleanup = api.inference.inferImage(base64Data, {
-        onModels: (newModels) => {
+        onModels: (newModels: ModelInfo[], totalCount: number) => {
           currentModels = newModels;
           setModels(newModels);
+          setTotalInferences(totalCount);
           setActiveTab("results");
 
           if (newModels.length > 0) {
@@ -250,6 +256,8 @@ export default function UniverseExplorer() {
           pendingResults = [];
         },
         onInference: (modelId, result) => {
+          setInferenceProgress((prev) => prev + 1);
+
           if (!modelId) {
             // Store the result temporarily if we don't have models yet
             if (currentModels.length === 0) {
@@ -276,6 +284,7 @@ export default function UniverseExplorer() {
         },
         onError: (modelId, error) => {
           console.error(`Error with model ${modelId}:`, error);
+          setInferenceProgress((prev) => prev + 1);
         },
         onComplete: () => {
           setIsLoading(false);
@@ -352,6 +361,13 @@ export default function UniverseExplorer() {
 
   return (
     <div className="flex flex-col h-full bg-gray-950 text-white relative">
+      {/* Loading Indicator - positioned at the top of the container */}
+      <LoadingIndicator
+        isLoading={isLoading}
+        progress={inferenceProgress}
+        total={totalInferences}
+      />
+
       <div className="flex-1 flex overflow-hidden relative">
         {/* Toolbar - switches between Annotation and Models */}
         <div

@@ -1,5 +1,3 @@
-import { InferImageResponse } from "@/adapters/roboflowAdapter";
-
 export interface ModelInfo {
   id: string;
   name: string;
@@ -30,20 +28,18 @@ export interface ModelInfo {
   version?: number;
 }
 
-export type InferenceEventCallbacks = {
-  onModels?: (models: ModelInfo[]) => void;
-  onInference?: (modelId: string, result: InferImageResponse) => void;
-  onError?: (modelId: string, error: string) => void;
-  onComplete?: () => void;
-};
+export interface InferenceCallbacks {
+  onModels: (models: ModelInfo[], totalInferences: number) => void;
+  onInference: (modelId: string | null, result: any) => void;
+  onError: (modelId: string | null, error: any) => void;
+  onComplete: () => void;
+}
 
 export const inferImage = (
-  base64Image: string,
-  callbacks: InferenceEventCallbacks
+  image: string,
+  callbacks: InferenceCallbacks
 ): (() => void) => {
-  const base64Data = base64Image.includes(",")
-    ? base64Image.split(",")[1]
-    : base64Image;
+  const base64Data = image.includes(",") ? image.split(",")[1] : image;
 
   // Create POST request with the image data
   const body = JSON.stringify({ image: base64Data });
@@ -108,7 +104,10 @@ export const inferImage = (
                 // Handle different event types
                 switch (event) {
                   case "models":
-                    callbacks.onModels?.(parsedData.models);
+                    callbacks.onModels?.(
+                      parsedData.models,
+                      parsedData.totalInferences
+                    );
                     break;
                   case "inference":
                     if (!parsedData.modelId) {
@@ -150,7 +149,10 @@ export const inferImage = (
 
               switch (event) {
                 case "models":
-                  callbacks.onModels?.(parsedData.models);
+                  callbacks.onModels?.(
+                    parsedData.models,
+                    parsedData.totalInferences
+                  );
                   break;
                 case "inference":
                   if (!parsedData.modelId) {
