@@ -192,7 +192,7 @@ export default function UniverseExplorer() {
 
             {/* Results Canvas */}
             {image && prompt && activeTab === "results" && (
-              <ResultsCanvas results={inferenceResults} />
+              <ResultsCanvas results={inferenceResults} image={image} />
             )}
 
             {/* Find Model Button */}
