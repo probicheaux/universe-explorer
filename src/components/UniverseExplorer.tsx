@@ -22,6 +22,7 @@ export default function UniverseExplorer() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("find");
   const [inferenceResults, setInferenceResults] = useState<any[]>([]);
+  const [hideGuides, setHideGuides] = useState(false);
 
   // Generate colors for all classes
   const classColors = useMemo(() => {
@@ -125,7 +126,12 @@ export default function UniverseExplorer() {
 
             {/* Tabs for switching between Find and Results */}
             {image && prompt && inferenceResults.length > 0 && (
-              <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
+              <Tabs
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                onMouseEnterTabButton={() => setHideGuides(true)}
+                onMouseLeaveTabButton={() => setHideGuides(false)}
+              />
             )}
 
             {/* Canvas - Always render BoundingBoxCanvas but control visibility */}
@@ -138,12 +144,15 @@ export default function UniverseExplorer() {
                 onBoxesChange={handleBoxesChange}
                 className={activeTab === "find" ? "block" : "hidden z-0"}
                 boxes={boxes}
+                hideGuides={hideGuides}
               />
             )}
 
             {/* Image Change Button - Only show in find tab */}
             {activeTab === "find" && (
               <button
+                onMouseEnter={() => setHideGuides(true)}
+                onMouseLeave={() => setHideGuides(false)}
                 onClick={() => {
                   // Trigger file input click
                   const fileInput = document.createElement("input");
@@ -191,6 +200,8 @@ export default function UniverseExplorer() {
               <FindModelButton
                 onClick={handleFindModel}
                 isLoading={isLoading}
+                onMouseEnter={() => setHideGuides(true)}
+                onMouseLeave={() => setHideGuides(false)}
               />
             )}
           </div>

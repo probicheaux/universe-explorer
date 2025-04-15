@@ -22,6 +22,7 @@ interface BoundingBoxCanvasProps {
   classColors: Record<string, string>;
   className?: string;
   boxes: BoundingBoxData[];
+  hideGuides?: boolean;
 }
 
 export default function BoundingBoxCanvas({
@@ -32,6 +33,7 @@ export default function BoundingBoxCanvas({
   classColors,
   className = "",
   boxes = [],
+  hideGuides = false,
 }: BoundingBoxCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -396,7 +398,7 @@ export default function BoundingBoxCanvas({
         mousePosition={mousePosition}
         selectedClass={selectedClass}
         color={selectedClass ? classColors[selectedClass] : undefined}
-        isHidden={isHoveringBox || selectedBoxIndex !== null}
+        isHidden={hideGuides || isHoveringBox || selectedBoxIndex !== null}
       />
 
       {/* Existing Boxes */}

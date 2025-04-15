@@ -5,9 +5,16 @@ export type TabType = "find" | "results";
 interface TabsProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
+  onMouseEnterTabButton: () => void;
+  onMouseLeaveTabButton: () => void;
 }
 
-export default function Tabs({ activeTab, onTabChange }: TabsProps) {
+export default function Tabs({
+  activeTab,
+  onTabChange,
+  onMouseEnterTabButton,
+  onMouseLeaveTabButton,
+}: TabsProps) {
   return (
     <div className="absolute z-20 top-4 left-1/2 transform -translate-x-1/2 flex space-x-2 bg-gray-900/80 backdrop-blur-sm rounded-lg p-1 shadow-lg">
       <button
@@ -17,6 +24,8 @@ export default function Tabs({ activeTab, onTabChange }: TabsProps) {
             ? " bg-gray-800 shadow-lg shadow-blue-400/50 text-white"
             : "text-gray-300 hover:bg-gray-800 cursor-pointer"
         }`}
+        onMouseEnter={onMouseEnterTabButton}
+        onMouseLeave={onMouseLeaveTabButton}
       >
         Find
       </button>
@@ -27,6 +36,8 @@ export default function Tabs({ activeTab, onTabChange }: TabsProps) {
             ? " bg-gray-800 shadow-lg shadow-blue-400/50 text-white"
             : "text-gray-300 hover:bg-gray-800 cursor-pointer"
         }`}
+        onMouseEnter={onMouseEnterTabButton}
+        onMouseLeave={onMouseLeaveTabButton}
       >
         Results
       </button>
