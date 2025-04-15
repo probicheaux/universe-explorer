@@ -1,14 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import PromptInput from "./PromptInput";
+import { cn } from "@/utils/cn";
 
 interface PromptAreaProps {
   prompt?: string;
   onPromptChange: (prompt: string) => void;
+  editable?: boolean;
 }
 
 export default function PromptArea({
   prompt,
   onPromptChange,
+  editable,
 }: PromptAreaProps) {
   const [isEditing, setIsEditing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -52,12 +55,14 @@ export default function PromptArea({
       >
         {/* Static Prompt View */}
         <div
-          className={`cursor-pointer transition-all duration-300 ${
+          className={cn(
+            "transition-all duration-300",
             isEditing
               ? "opacity-0 transform translate-y-2"
-              : "opacity-100 transform translate-y-0"
-          }`}
-          onClick={() => setIsEditing(true)}
+              : "opacity-100 transform translate-y-0",
+            editable ? "cursor-pointer" : "cursor-default"
+          )}
+          onClick={() => editable && setIsEditing(true)}
         >
           <h3 className="text-lg font-semibold text-gray-200 mb-2">
             What do you want to understand about your image?
@@ -82,9 +87,6 @@ export default function PromptArea({
         >
           <PromptInput
             ref={inputRef}
-            onSubmit={(prompt) => {
-              onPromptChange(prompt);
-            }}
             onComplete={(data) => {
               onPromptChange(data.prompt);
               setIsEditing(false);

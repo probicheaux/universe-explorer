@@ -3,14 +3,13 @@
 import { useState, useEffect, useRef, forwardRef } from "react";
 
 interface PromptInputProps {
-  onSubmit: (prompt: string) => void;
   onComplete: (data: { prompt: string }) => void;
   initialValue: string | undefined;
   onBlur?: () => void;
 }
 
 const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
-  ({ onSubmit, onComplete, initialValue = "", onBlur }, ref) => {
+  ({ onComplete, initialValue = "", onBlur }, ref) => {
     const [prompt, setPrompt] = useState(initialValue);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const finalRef = (ref ||

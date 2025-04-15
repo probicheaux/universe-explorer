@@ -232,7 +232,11 @@ export default function UniverseExplorer() {
               />
             )}
           </div>
-          <PromptArea prompt={prompt} onPromptChange={handlePromptChange} />
+          <PromptArea
+            prompt={prompt}
+            onPromptChange={handlePromptChange}
+            editable={activeTab === "find"}
+          />
         </div>
       </div>
     </div>
