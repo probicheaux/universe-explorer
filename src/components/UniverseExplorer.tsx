@@ -253,6 +253,15 @@ export default function UniverseExplorer() {
                 models={models}
                 results={inferenceResults}
                 isLoading={isLoading}
+                drawnBoxes={boxes}
+                imageDimensions={
+                  imageDimensions as {
+                    width: number;
+                    height: number;
+                    x: number;
+                    y: number;
+                  }
+                }
               />
             )}
           </div>

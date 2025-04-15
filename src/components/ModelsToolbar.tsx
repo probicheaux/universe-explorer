@@ -1,11 +1,20 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { ModelInfo } from "@/utils/api/inference";
+import { calculateMatchPercentage } from "@/utils/boxOverlap";
+import { InferImageResponse } from "@/adapters/roboflowAdapter";
 
 interface ModelsToolbarProps {
   models: ModelInfo[];
-  results: Record<string, any>;
+  results: Record<string, InferImageResponse>;
   onModelSelect?: (modelId: string) => void;
   isLoading?: boolean;
+  drawnBoxes: any[];
+  imageDimensions?: {
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+  };
 }
 
 // Memoize the individual model card to prevent unnecessary re-renders
@@ -14,10 +23,12 @@ const ModelCard = React.memo(
     model,
     result,
     onSelect,
+    matchPercentage,
   }: {
     model: ModelInfo;
-    result: any;
+    result: InferImageResponse;
     onSelect: (modelId: string) => void;
+    matchPercentage: number;
   }) => {
     const hasError = result?.error;
     const isComplete = result && !hasError;
@@ -57,6 +68,9 @@ const ModelCard = React.memo(
             <div className="text-xs text-gray-400">
               {(result.time * 1000).toFixed(0)}ms
             </div>
+            <div className="text-xs text-blue-400">
+              {matchPercentage}% match
+            </div>
           </div>
         )}
       </div>
@@ -71,18 +85,55 @@ function ModelsToolbar({
   results = {},
   onModelSelect,
   isLoading = false,
+  drawnBoxes = [],
+  imageDimensions,
 }: ModelsToolbarProps) {
+  // Calculate match percentages and sort models
+  const sortedModels = useMemo(() => {
+    if (!imageDimensions) return models;
+
+    return [...models].sort((a, b) => {
+      const matchA = calculateMatchPercentage(
+        drawnBoxes,
+        results[a.id],
+        imageDimensions
+      );
+      const matchB = calculateMatchPercentage(
+        drawnBoxes,
+        results[b.id],
+        imageDimensions
+      );
+      return matchB - matchA; // Sort in descending order
+    });
+  }, [models, results, drawnBoxes, imageDimensions]);
+
+  // Select the first model by default when the order changes
+  useEffect(() => {
+    if (sortedModels.length > 0 && onModelSelect) {
+      onModelSelect(sortedModels[0].id);
+    }
+  }, [sortedModels, onModelSelect]);
+
   // Memoize the model cards list to prevent unnecessary recalculation
   const modelCards = useMemo(() => {
-    return models.map((model) => (
+    return sortedModels.map((model) => (
       <ModelCard
         key={model.id}
         model={model}
         result={results[model.id]}
         onSelect={onModelSelect || (() => {})}
+        matchPercentage={
+          imageDimensions
+            ? calculateMatchPercentage(
+                drawnBoxes,
+                results[model.id],
+                imageDimensions
+              )
+            : 0
+        }
       />
     ));
-  }, [models, results, onModelSelect]);
+  }, [sortedModels, results, onModelSelect, drawnBoxes, imageDimensions]);
 
   return (
     <div className="w-full h-full bg-gray-900/80 backdrop-blur-md rounded-l-lg p-4 border border-gray-800 shadow-lg">

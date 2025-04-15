@@ -22,6 +22,7 @@ export type InferImageResponse = {
     height: number;
   };
   predictions: BoundingBoxPrediction[];
+  error?: string;
 };
 
 // Helper function to delay execution
