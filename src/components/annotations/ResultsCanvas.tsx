@@ -4,7 +4,7 @@ import { InferImageResponse } from "@/adapters/roboflowAdapter";
 import BoundingBox from "./BoundingBox";
 
 interface ResultsCanvasProps {
-  result: InferImageResponse;
+  result: InferImageResponse | null | undefined;
   image?: string;
   imageDimensions?: {
     width: number;
@@ -31,7 +31,10 @@ export default function ResultsCanvas({
 
   // Memoize the boxes to display to prevent unnecessary re-renders
   const boxesToDisplay = useMemo(() => {
-    return result?.predictions ?? [];
+    if (!result || result.error) {
+      return [];
+    }
+    return result.predictions ?? [];
   }, [result]);
 
   const calculateScaleAndOffset = () => {

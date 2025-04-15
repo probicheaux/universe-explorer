@@ -157,6 +157,7 @@ export default function UniverseExplorer() {
     setIsLoading(true);
     setInferenceResults({});
     setModels([]);
+    setSelectedModel(null); // Reset selected model when starting new inference
 
     try {
       // Remove the data:image/jpeg;base64, prefix if present
@@ -173,18 +174,27 @@ export default function UniverseExplorer() {
           setModels(newModels);
           // Switch to results tab after receiving models
           setActiveTab("results");
+          // Select the first model by default if available
+          if (newModels.length > 0) {
+            setSelectedModel(newModels[0].id);
+          }
         },
         onInference: (modelId, result) => {
+          if (!modelId) {
+            console.warn("Received inference result without modelId");
+            return;
+          }
           setInferenceResults((prev) => ({
             ...prev,
             [modelId]: result,
           }));
         },
         onError: (modelId, error) => {
-          console.error(`Error with model ${modelId}:`, error);
+          const errorModelId = modelId || "unknown";
+          console.error(`Error with model ${errorModelId}:`, error);
           setInferenceResults((prev) => ({
             ...prev,
-            [modelId]: { error },
+            [errorModelId]: { error },
           }));
         },
         onComplete: () => {
@@ -201,6 +211,11 @@ export default function UniverseExplorer() {
 
   const handleModelSelect = useCallback(
     (modelId: string) => {
+      if (!modelId) {
+        console.warn("handleModelSelect called with undefined modelId");
+        return;
+      }
+
       console.log("handleModelSelect called with modelId:", modelId);
 
       // Immediately update the selected model
@@ -212,13 +227,8 @@ export default function UniverseExplorer() {
 
       if (selectedResult && !selectedResult.error) {
         console.log("Setting inference results to show only this model");
-        setInferenceResults((prev) => {
-          // Only update if the results have actually changed
-          if (prev[modelId] === selectedResult) {
-            return prev;
-          }
-          return { [modelId]: selectedResult };
-        });
+        // Don't clear other results, just update the selected model
+        setSelectedModel(modelId);
 
         // Only switch to results tab if we're not already there
         if (activeTab !== "results") {
@@ -373,17 +383,21 @@ export default function UniverseExplorer() {
             )}
 
             {/* Results Canvas */}
-            {image && prompt && activeTab === "results" && imageDimensions && (
-              <ResultsCanvas
-                result={inferenceResults?.[selectedModel ?? ""]}
-                image={image}
-                imageDimensions={imageDimensions}
-                offset={offset}
-                setOffset={setOffset}
-                scale={scale}
-                setScale={setScale}
-              />
-            )}
+            {image &&
+              prompt &&
+              activeTab === "results" &&
+              imageDimensions &&
+              selectedModel && (
+                <ResultsCanvas
+                  result={inferenceResults[selectedModel]}
+                  image={image}
+                  imageDimensions={imageDimensions}
+                  offset={offset}
+                  setOffset={setOffset}
+                  scale={scale}
+                  setScale={setScale}
+                />
+              )}
 
             {/* Find Model Button */}
             {canFindModel && activeTab === "find" && (
