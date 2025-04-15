@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useMemo } from "react";
+import React, { useRef, useEffect, useMemo } from "react";
 import { getColorForLabel } from "@/utils/colors";
 import { InferImageResponse } from "@/adapters/roboflowAdapter";
 import BoundingBox from "./BoundingBox";
@@ -12,16 +12,22 @@ interface ResultsCanvasProps {
     x: number;
     y: number;
   };
+  offset: { x: number; y: number };
+  setOffset: (offset: { x: number; y: number }) => void;
+  scale: { x: number; y: number };
+  setScale: (scale: { x: number; y: number }) => void;
 }
 
 export default function ResultsCanvas({
   result,
   image,
   imageDimensions,
+  offset,
+  setOffset,
+  scale,
+  setScale,
 }: ResultsCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState({ x: 1, y: 1 });
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
 
   // Memoize the boxes to display to prevent unnecessary re-renders
   const boxesToDisplay = useMemo(() => {

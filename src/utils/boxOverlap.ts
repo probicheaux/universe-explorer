@@ -8,35 +8,28 @@ interface Box {
   class?: string;
 }
 
-interface ImageDimensions {
-  width: number;
-  height: number;
-  x: number;
-  y: number;
-}
-
 /**
  * Convert a box from rendered image coordinates to original image coordinates
  */
 function convertToOriginalImageCoordinates(
   box: Box,
-  imageDimensions: ImageDimensions,
-  originalWidth: number,
-  originalHeight: number
+  scale: { x: number; y: number },
+  offset: { x: number; y: number }
 ): Box {
   // First remove the offset to get coordinates relative to the image content
-  const xWithoutOffset = box.x - imageDimensions.x;
-  const yWithoutOffset = box.y - imageDimensions.y;
+  const xWithoutOffset = box.x - scale.x * offset.x + (box.width * scale.x) / 2;
+  const yWithoutOffset =
+    box.y - scale.y * offset.y + (box.height * scale.y) / 2;
 
   // Then reverse the scaling to get back to original image coordinates
-  const scaleX = originalWidth / imageDimensions.width;
-  const scaleY = originalHeight / imageDimensions.height;
+  const x = xWithoutOffset / scale.x;
+  const y = yWithoutOffset / scale.y;
 
   return {
-    x: xWithoutOffset * scaleX,
-    y: yWithoutOffset * scaleY,
-    width: box.width * scaleX,
-    height: box.height * scaleY,
+    x,
+    y,
+    width: box.width / scale.x,
+    height: box.height / scale.y,
   };
 }
 
@@ -70,7 +63,8 @@ function getBoxArea(box: Box): number {
 export function calculateMatchPercentage(
   drawnBoxes: Box[],
   modelResult: InferImageResponse | undefined,
-  imageDimensions: ImageDimensions
+  scale: { x: number; y: number },
+  offset: { x: number; y: number }
 ): number {
   if (!modelResult || !modelResult.predictions || drawnBoxes.length === 0) {
     return 0;
@@ -78,12 +72,7 @@ export function calculateMatchPercentage(
 
   // Convert drawn boxes to original image coordinates
   const convertedDrawnBoxes = drawnBoxes.map((box) =>
-    convertToOriginalImageCoordinates(
-      box,
-      imageDimensions,
-      modelResult.image.width,
-      modelResult.image.height
-    )
+    convertToOriginalImageCoordinates(box, scale, offset)
   );
 
   // Model boxes are already in original image coordinates

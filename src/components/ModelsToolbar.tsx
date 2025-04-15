@@ -15,6 +15,8 @@ interface ModelsToolbarProps {
     x: number;
     y: number;
   };
+  scale: { x: number; y: number };
+  offset: { x: number; y: number };
 }
 
 // Memoize the individual model card to prevent unnecessary re-renders
@@ -87,6 +89,8 @@ function ModelsToolbar({
   isLoading = false,
   drawnBoxes = [],
   imageDimensions,
+  scale,
+  offset,
 }: ModelsToolbarProps) {
   // Calculate match percentages and sort models
   const sortedModels = useMemo(() => {
@@ -96,12 +100,14 @@ function ModelsToolbar({
       const matchA = calculateMatchPercentage(
         drawnBoxes,
         results[a.id],
-        imageDimensions
+        scale,
+        offset
       );
       const matchB = calculateMatchPercentage(
         drawnBoxes,
         results[b.id],
-        imageDimensions
+        scale,
+        offset
       );
       return matchB - matchA; // Sort in descending order
     });
@@ -127,7 +133,8 @@ function ModelsToolbar({
             ? calculateMatchPercentage(
                 drawnBoxes,
                 results[model.id],
-                imageDimensions
+                scale,
+                offset
               )
             : 0
         }

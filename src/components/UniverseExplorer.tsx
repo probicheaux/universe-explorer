@@ -37,6 +37,8 @@ export default function UniverseExplorer() {
       }
     | undefined
   >(undefined);
+  const [scale, setScale] = useState({ x: 1, y: 1 });
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [models, setModels] = useState<ModelInfo[]>([]);
   const cleanupRef = useRef<(() => void) | null>(null);
 
@@ -286,6 +288,8 @@ export default function UniverseExplorer() {
                     y: number;
                   }
                 }
+                scale={scale}
+                offset={offset}
               />
             )}
           </div>
@@ -374,6 +378,10 @@ export default function UniverseExplorer() {
                 result={inferenceResults?.[selectedModel ?? ""]}
                 image={image}
                 imageDimensions={imageDimensions}
+                offset={offset}
+                setOffset={setOffset}
+                scale={scale}
+                setScale={setScale}
               />
             )}
 
