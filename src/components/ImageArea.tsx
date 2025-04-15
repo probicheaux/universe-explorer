@@ -25,7 +25,7 @@ export default function ImageArea({
     x: number;
     y: number;
   } | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -75,16 +75,55 @@ export default function ImageArea({
           const containerRect = containerRef.current!.getBoundingClientRect();
           const imgRect = img.getBoundingClientRect();
 
+          // Get the natural dimensions of the image
+          const naturalWidth = img.naturalWidth;
+          const naturalHeight = img.naturalHeight;
+
+          // Calculate aspect ratios
+          const containerRatio = containerRect.width / containerRect.height;
+          const imageRatio = naturalWidth / naturalHeight;
+
+          // Calculate the actual rendered dimensions
+          let renderedWidth, renderedHeight;
+          if (imageRatio > containerRatio) {
+            // Image is wider than container
+            renderedWidth = containerRect.width;
+            renderedHeight = renderedWidth / imageRatio;
+          } else {
+            // Image is taller than container
+            renderedHeight = containerRect.height;
+            renderedWidth = renderedHeight * imageRatio;
+          }
+
+          console.log("ImageArea position calculation:", {
+            containerRect: {
+              left: containerRect.left,
+              top: containerRect.top,
+              width: containerRect.width,
+              height: containerRect.height,
+            },
+            naturalSize: {
+              width: naturalWidth,
+              height: naturalHeight,
+            },
+            renderedSize: {
+              width: renderedWidth,
+              height: renderedHeight,
+            },
+          });
+
           // Calculate position relative to container
           const x = imgRect.left - containerRect.left;
           const y = imgRect.top - containerRect.top;
 
           const newDimensions = {
-            width: imgRect.width,
-            height: imgRect.height,
+            width: renderedWidth,
+            height: renderedHeight,
             x,
             y,
           };
+
+          console.log("ImageArea calculated dimensions:", newDimensions);
 
           // Only update if dimensions have changed
           if (
