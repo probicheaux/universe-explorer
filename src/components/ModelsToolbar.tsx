@@ -22,11 +22,14 @@ const ModelCard = React.memo(
     const hasError = result?.error;
     const isComplete = result && !hasError;
 
+    const handleClick = () => {
+      onSelect(model.id);
+    };
+
     return (
       <div
-        key={model.id}
         className="group flex flex-col gap-1 p-3 bg-gray-800/50 rounded-md border border-gray-700 hover:bg-gray-700/50 transition-all cursor-pointer"
-        onClick={() => onSelect(model.id)}
+        onClick={handleClick}
       >
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-200">{model.name}</span>

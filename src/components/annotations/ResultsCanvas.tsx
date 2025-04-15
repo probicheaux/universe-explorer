@@ -4,7 +4,7 @@ import { InferImageResponse } from "@/adapters/roboflowAdapter";
 import BoundingBox from "./BoundingBox";
 
 interface ResultsCanvasProps {
-  results: InferImageResponse[];
+  result: InferImageResponse;
   image?: string;
   imageDimensions?: {
     width: number;
@@ -15,7 +15,7 @@ interface ResultsCanvasProps {
 }
 
 export default function ResultsCanvas({
-  results = [],
+  result,
   image,
   imageDimensions,
 }: ResultsCanvasProps) {
@@ -24,8 +24,7 @@ export default function ResultsCanvas({
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
   // For now, we'll use hardcoded boxes for demonstration
-  console.log("results on canvas", results);
-  const boxesToDisplay = results?.[0]?.predictions ?? [];
+  const boxesToDisplay = result?.predictions ?? [];
 
   const calculateScaleAndOffset = () => {
     if (!containerRef.current || !image || !imageDimensions) {

@@ -11,7 +11,6 @@ import FindModelButton from "./FindModelButton";
 import Tabs, { TabType } from "./Tabs";
 import { getColorForLabel } from "../utils/colors";
 import api from "@/utils/api";
-import { PromptResponse } from "@/utils/api/prompt";
 import { ModelInfo } from "@/utils/api/inference";
 
 export default function UniverseExplorer() {
@@ -28,6 +27,7 @@ export default function UniverseExplorer() {
     {}
   );
   const [hideGuides, setHideGuides] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [imageDimensions, setImageDimensions] = useState<
     | {
         width: number;
@@ -199,19 +199,11 @@ export default function UniverseExplorer() {
 
   const handleModelSelect = useCallback(
     (modelId: string) => {
-      // Update the results canvas to show the selected model's results
-      const selectedResult = inferenceResults[modelId];
-      if (selectedResult && !selectedResult.error) {
-        setInferenceResults((prev) => {
-          // Only update if the results have actually changed
-          if (prev[modelId] === selectedResult) {
-            return prev;
-          }
-          return { [modelId]: selectedResult };
-        });
-      }
+      if (selectedModel === modelId) return;
+
+      setSelectedModel(modelId);
     },
-    [inferenceResults]
+    [inferenceResults, activeTab]
   );
 
   const canFindModel = image && prompt && boxes.length > 0;
@@ -228,6 +220,11 @@ export default function UniverseExplorer() {
       }
     };
   }, []);
+
+  // Log activeTab changes
+  useEffect(() => {
+    console.log("activeTab changed to:", activeTab);
+  }, [activeTab]);
 
   return (
     <div className="flex flex-col h-full bg-gray-950 text-white relative">
@@ -341,7 +338,7 @@ export default function UniverseExplorer() {
             {/* Results Canvas */}
             {image && prompt && activeTab === "results" && imageDimensions && (
               <ResultsCanvas
-                results={Object.values(inferenceResults)}
+                result={inferenceResults?.[selectedModel ?? ""]}
                 image={image}
                 imageDimensions={imageDimensions}
               />
