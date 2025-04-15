@@ -181,6 +181,7 @@ export default function UniverseExplorer() {
   };
 
   const handlePromptChange = async (newPrompt: string) => {
+    console.log("UniverseExplorer: handlePromptChange called with:", newPrompt);
     setPrompt(newPrompt);
     await processPrompt(newPrompt);
   };

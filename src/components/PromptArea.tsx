@@ -20,9 +20,14 @@ export default function PromptArea({
   // Handle click outside to close the editor
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      console.log("Document click event detected");
+
       // Check if the click is on a suggestion
       const target = event.target as HTMLElement;
+      console.log("Click target:", target);
+
       if (target.closest(".suggestions-dropdown")) {
+        console.log("Click is on a suggestion, not closing editor");
         return;
       }
 
@@ -31,7 +36,14 @@ export default function PromptArea({
         !containerRef.current.contains(event.target as Node) &&
         isEditing
       ) {
+        console.log(
+          "Click is outside the container and editor is open, closing editor"
+        );
         setIsEditing(false);
+      } else {
+        console.log(
+          "Click is inside the container or editor is closed, not closing editor"
+        );
       }
     };
 
@@ -50,12 +62,15 @@ export default function PromptArea({
 
   const handlePromptChange = (data: { prompt: string }) => {
     console.log("PromptArea: handlePromptChange called with:", data);
+
+    // Call the parent's onPromptChange function
     onPromptChange(data.prompt);
+
     // Add a small delay to ensure the prompt is set before transitioning
     setTimeout(() => {
       console.log("PromptArea: Setting isEditing to false");
       setIsEditing(false);
-    }, 100);
+    }, 300); // Increased timeout to ensure the component has fully updated
   };
 
   const handleContainerClick = (e: React.MouseEvent) => {
@@ -63,7 +78,6 @@ export default function PromptArea({
     if (!isEditing && editable) {
       e.preventDefault();
       e.stopPropagation();
-      console.log("PromptArea: Container clicked, setting isEditing to true");
       setIsEditing(true);
     }
   };
@@ -112,6 +126,10 @@ export default function PromptArea({
               : "opacity-0 transform -translate-y-2 pointer-events-none"
           }`}
           style={{ zIndex: isEditing ? 10 : "auto" }}
+          onClick={(e) => {
+            console.log("Editable prompt container clicked");
+            // Don't stop propagation here to allow the click to reach the suggestions
+          }}
         >
           <PromptInput
             ref={inputRef}

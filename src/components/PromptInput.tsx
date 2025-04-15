@@ -21,7 +21,6 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
     const [isLoading, setIsLoading] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(-1);
     const [showSuggestions, setShowSuggestions] = useState(false);
-    const [isSuggestionClick, setIsSuggestionClick] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const suggestionsRef = useRef<HTMLDivElement>(null);
     const finalRef = (ref ||
@@ -72,18 +71,6 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
       }
     };
 
-    const handleSuggestionClick = (suggestion: PromptSuggestion) => {
-      setIsSuggestionClick(true);
-      setPrompt(suggestion.text);
-      setShowSuggestions(false);
-      onComplete({ prompt: suggestion.text });
-
-      // Reset the flag after a short delay
-      setTimeout(() => {
-        setIsSuggestionClick(false);
-      }, 200);
-    };
-
     const handleKeyDown = (e: React.KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
@@ -107,7 +94,11 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
         case "Enter":
           e.preventDefault();
           if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
-            handleSuggestionClick(suggestions[selectedIndex]);
+            // Directly set the prompt and call onComplete
+            const suggestion = suggestions[selectedIndex];
+            setPrompt(suggestion.text);
+            setShowSuggestions(false);
+            onComplete({ prompt: suggestion.text });
           } else {
             handleSubmit();
           }
@@ -120,17 +111,9 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
     };
 
     const handleBlur = (e: React.FocusEvent) => {
-      // Skip if we're clicking a suggestion
-      if (isSuggestionClick) {
-        return;
-      }
-
-      // Check if the click is outside the component
-      const relatedTarget = e.relatedTarget as HTMLElement;
-      if (!relatedTarget || !suggestionsRef.current?.contains(relatedTarget)) {
-        setShowSuggestions(false);
-        onBlur?.();
-      }
+      // We're not handling blur for suggestions anymore
+      // Just call the onBlur callback if provided
+      onBlur?.();
     };
 
     return (
@@ -151,6 +134,10 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
               ref={suggestionsRef}
               className="absolute z-50 w-full bottom-full mb-2 bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-lg shadow-xl overflow-hidden transition-all duration-200 ease-in-out suggestions-dropdown"
               style={{ boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)" }}
+              onClick={(e) => {
+                console.log("Suggestions container clicked");
+                // Don't stop propagation here to allow the click to reach the li elements
+              }}
             >
               {isLoading ? (
                 <div className="px-4 py-2 text-sm text-gray-400">
@@ -167,9 +154,17 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
                           : "text-gray-300 hover:bg-gray-800/50"
                       }`}
                       onClick={(e) => {
+                        console.log(
+                          "Suggestion item clicked directly:",
+                          suggestion
+                        );
                         e.preventDefault();
                         e.stopPropagation();
-                        handleSuggestionClick(suggestion);
+
+                        // Directly set the prompt and call onComplete
+                        setPrompt(suggestion.text);
+                        setShowSuggestions(false);
+                        onComplete({ prompt: suggestion.text });
                       }}
                     >
                       {suggestion.text}
