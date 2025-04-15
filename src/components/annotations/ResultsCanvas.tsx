@@ -22,12 +22,6 @@ export default function ResultsCanvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState({ x: 1, y: 1 });
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [containerDimensions, setContainerDimensions] = useState({
-    width: 0,
-    height: 0,
-    x: 0,
-    y: 0,
-  });
 
   // For now, we'll use hardcoded boxes for demonstration
   console.log("results on canvas", results);
@@ -55,20 +49,6 @@ export default function ResultsCanvas({
 
       // Get the container's dimensions
       if (!containerRef.current) return;
-      const containerRect = containerRef.current.getBoundingClientRect();
-
-      // Calculate container position based on it being centered with the image
-      const containerX =
-        imageDimensions.x + (imageDimensions.width - containerRect.width) / 2;
-      const containerY =
-        imageDimensions.y + (imageDimensions.height - containerRect.height) / 2;
-
-      setContainerDimensions({
-        width: containerRect.width,
-        height: containerRect.height,
-        x: containerX,
-        y: containerY,
-      });
 
       // Calculate offset relative to the container
       const offsetX = imageDimensions.x;
