@@ -35,6 +35,8 @@ const ModelCard = React.memo(
     const hasError = result?.error;
     const isComplete = result && !hasError;
 
+    console.log("model", model);
+
     const handleClick = useCallback(() => {
       onSelect(model.id);
     }, [model.id, onSelect]);

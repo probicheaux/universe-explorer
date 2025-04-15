@@ -81,7 +81,15 @@ export async function POST(request: NextRequest) {
 
       // Get top 10 models
       const topModels = datasets.hits.hits.slice(0, 10).map((hit: any) => ({
-        id: hit._id,
+        id: hit.dataset_id,
+        icon: hit._source.icon,
+        images: hit._source.images,
+        universe: hit._source.universe,
+        universeStats: hit._source.universeStats,
+        classCounts: hit._source.class_counts,
+        bestModelScore: hit._source.bestModelScore,
+        type: hit._source.type,
+        annotation: hit._source.annotation,
         url: hit._source.url,
         version: hit._source.latestVersion,
         name: hit._source.name || "Unknown Model",
