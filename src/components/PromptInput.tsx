@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, forwardRef } from "react";
+import api from "@/utils/api";
 
 interface PromptSuggestion {
   text: string;
@@ -48,10 +49,7 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
         setIsLoading(true);
         try {
           console.log(`Fetching suggestions for: "${prompt}"`);
-          const response = await fetch(
-            `/api/prompt/suggestions?q=${encodeURIComponent(prompt)}`
-          );
-          const data = await response.json();
+          const data = await api.prompt.suggestions.fetch(prompt);
           console.log(`Received ${data.length} suggestions:`, data);
           setSuggestions(data);
           setShowSuggestions(data.length > 0);
@@ -178,7 +176,6 @@ const PromptInput = forwardRef<HTMLTextAreaElement, PromptInputProps>(
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log("Suggestion clicked directly:", suggestion);
                         handleSuggestionClick(suggestion);
                       }}
                     >

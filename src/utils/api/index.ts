@@ -1,20 +1,16 @@
+import { prompt } from "./prompt";
 import { inferImage } from "./inference";
-import { send as sendPrompt } from "./prompt";
 
 export interface ApiResponse<T> {
   data?: T;
   error?: string;
 }
 
-const inference = {
-  inferImage,
-};
-
-const prompt = {
-  send: sendPrompt,
-};
-
-export default {
-  inference,
+const api = {
   prompt,
+  inference: {
+    inferImage,
+  },
 };
+
+export default api;
