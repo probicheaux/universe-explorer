@@ -28,7 +28,7 @@ export default function ImageArea({
     containerX: number;
     containerY: number;
   } | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -75,14 +75,42 @@ export default function ImageArea({
       const containerRect = containerRef.current?.getBoundingClientRect();
       if (!containerRect) return;
 
+      // Calculate the actual rendered dimensions based on object-contain behavior
+      const containerRatio = containerRect.width / containerRect.height;
+      const imageRatio = img.naturalWidth / img.naturalHeight;
+
+      let renderedWidth, renderedHeight;
+      if (imageRatio > containerRatio) {
+        // Image is wider than container
+        renderedWidth = containerRect.width;
+        renderedHeight = renderedWidth / imageRatio;
+      } else {
+        // Image is taller than container
+        renderedHeight = containerRect.height;
+        renderedWidth = renderedHeight * imageRatio;
+      }
+
+      // Calculate the position of the rendered image (accounting for centering)
+      const x = (containerRect.width - renderedWidth) / 2;
+      const y = (containerRect.height - renderedHeight) / 2;
+
       const newDimensions = {
-        width: img.naturalWidth,
-        height: img.naturalHeight,
-        x: containerRect.left,
-        y: containerRect.top,
+        width: renderedWidth,
+        height: renderedHeight,
+        x,
+        y,
         containerX: containerRect.left,
         containerY: containerRect.top,
       };
+
+      console.log(
+        "y",
+        y,
+        "containerRect.top",
+        containerRect.top,
+        "containerY",
+        containerRect.top + y
+      );
 
       // Only update if dimensions have changed
       if (

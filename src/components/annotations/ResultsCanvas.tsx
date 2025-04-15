@@ -106,29 +106,71 @@ export default function ResultsCanvas({
 
   return (
     <div ref={containerRef} className="absolute inset-0 z-10">
+      {/* Debug image dimensions with a red box */}
+      {imageDimensions && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: imageDimensions.width,
+            height: imageDimensions.height,
+            border: "1px solid red",
+          }}
+        ></div>
+      )}
+      {/* Debug container dimensions with a blue box */}
+      {containerDimensions && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: containerDimensions.width,
+            height: containerDimensions.height,
+            border: "1px solid blue",
+          }}
+        ></div>
+      )}
+      {/* Debug offset with a little green square  */}
+      {offset && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: 10,
+            height: 10,
+            backgroundColor: "green",
+          }}
+        ></div>
+      )}
       {boxesToDisplay.map((box, index) => {
         const color = getColorForLabel(box.class);
 
-        console.log("offset", offset);
-
-        // Scale the coordinates and apply offset to match the rendered image position
-        const removeBoxWidth =
-          imageDimensions?.width &&
-          containerDimensions.width === imageDimensions?.width
-            ? (box.width * scale.x) / 2
-            : 0;
-        const removeBoxHeight =
-          imageDimensions?.height &&
-          containerDimensions.height === imageDimensions?.height
-            ? (box.height * scale.y) / 2
-            : 0;
-        const scaledX =
-          (box.x - offset.x) * scale.x + offset.x - removeBoxWidth;
-        const scaledY =
-          (box.y - offset.y) * scale.y + offset.y - removeBoxHeight;
-
+        // First subtract the offset to get coordinates relative to the image content
+        // Then scale, and finally add the offset back
+        const scaledX = box.x * scale.x + offset.x - (box.width * scale.x) / 2;
+        const scaledY = box.y * scale.y + offset.y - (box.height * scale.y) / 2;
         const scaledWidth = box.width * scale.x;
         const scaledHeight = box.height * scale.y;
+
+        console.log(`Box ${index} transformation:`, {
+          original: {
+            x: box.x,
+            y: box.y,
+            width: box.width,
+            height: box.height,
+          },
+          scale,
+          offset,
+          scaled: {
+            x: scaledX,
+            y: scaledY,
+            width: scaledWidth,
+            height: scaledHeight,
+          },
+        });
 
         return (
           <BoundingBox
