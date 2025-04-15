@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import { getColorForLabel } from "@/utils/colors";
 import { InferImageResponse } from "@/adapters/roboflowAdapter";
 import BoundingBox from "./BoundingBox";
@@ -23,8 +23,10 @@ export default function ResultsCanvas({
   const [scale, setScale] = useState({ x: 1, y: 1 });
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
-  // For now, we'll use hardcoded boxes for demonstration
-  const boxesToDisplay = result?.predictions ?? [];
+  // Memoize the boxes to display to prevent unnecessary re-renders
+  const boxesToDisplay = useMemo(() => {
+    return result?.predictions ?? [];
+  }, [result]);
 
   const calculateScaleAndOffset = () => {
     if (!containerRef.current || !image || !imageDimensions) {
@@ -83,34 +85,39 @@ export default function ResultsCanvas({
     };
   }, [image, imageDimensions]);
 
+  // Memoize the bounding boxes to prevent unnecessary re-renders
+  const boundingBoxes = useMemo(() => {
+    return boxesToDisplay.map((box, index) => {
+      const color = getColorForLabel(box.class);
+
+      // First subtract the offset to get coordinates relative to the image content
+      // Then scale, and finally add the offset back
+      const scaledX = box.x * scale.x + offset.x - (box.width * scale.x) / 2;
+      const scaledY = box.y * scale.y + offset.y - (box.height * scale.y) / 2;
+      const scaledWidth = box.width * scale.x;
+      const scaledHeight = box.height * scale.y;
+
+      return (
+        <BoundingBox
+          key={index}
+          start={{ x: scaledX, y: scaledY }}
+          end={{ x: scaledX + scaledWidth, y: scaledY + scaledHeight }}
+          label={`${box.class} (${(box.confidence * 100).toFixed(0)}%)`}
+          color={color}
+          isSelected={false}
+          onHover={undefined}
+          onClick={undefined}
+          onResizeStart={undefined}
+          onMoveStart={undefined}
+          onMenuOpen={undefined}
+        />
+      );
+    });
+  }, [boxesToDisplay, scale, offset]);
+
   return (
     <div ref={containerRef} className="absolute inset-0 z-10">
-      {boxesToDisplay.map((box, index) => {
-        const color = getColorForLabel(box.class);
-
-        // First subtract the offset to get coordinates relative to the image content
-        // Then scale, and finally add the offset back
-        const scaledX = box.x * scale.x + offset.x - (box.width * scale.x) / 2;
-        const scaledY = box.y * scale.y + offset.y - (box.height * scale.y) / 2;
-        const scaledWidth = box.width * scale.x;
-        const scaledHeight = box.height * scale.y;
-
-        return (
-          <BoundingBox
-            key={index}
-            start={{ x: scaledX, y: scaledY }}
-            end={{ x: scaledX + scaledWidth, y: scaledY + scaledHeight }}
-            label={`${box.class} (${(box.confidence * 100).toFixed(0)}%)`}
-            color={color}
-            isSelected={false}
-            onHover={undefined}
-            onClick={undefined}
-            onResizeStart={undefined}
-            onMoveStart={undefined}
-            onMenuOpen={undefined}
-          />
-        );
-      })}
+      {boundingBoxes}
     </div>
   );
 }

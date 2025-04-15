@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from "react";
+import React, { useMemo, useEffect, useCallback } from "react";
 import { ModelInfo } from "@/utils/api/inference";
 import { calculateMatchPercentage } from "@/utils/boxOverlap";
 import { InferImageResponse } from "@/adapters/roboflowAdapter";
@@ -33,9 +33,9 @@ const ModelCard = React.memo(
     const hasError = result?.error;
     const isComplete = result && !hasError;
 
-    const handleClick = () => {
+    const handleClick = useCallback(() => {
       onSelect(model.id);
-    };
+    }, [model.id, onSelect]);
 
     return (
       <div

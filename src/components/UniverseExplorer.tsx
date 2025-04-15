@@ -199,9 +199,33 @@ export default function UniverseExplorer() {
 
   const handleModelSelect = useCallback(
     (modelId: string) => {
-      if (selectedModel === modelId) return;
+      console.log("handleModelSelect called with modelId:", modelId);
 
+      // Immediately update the selected model
       setSelectedModel(modelId);
+
+      // Update the results canvas to show the selected model's results
+      const selectedResult = inferenceResults[modelId];
+      console.log("Selected result:", selectedResult);
+
+      if (selectedResult && !selectedResult.error) {
+        console.log("Setting inference results to show only this model");
+        setInferenceResults((prev) => {
+          // Only update if the results have actually changed
+          if (prev[modelId] === selectedResult) {
+            return prev;
+          }
+          return { [modelId]: selectedResult };
+        });
+
+        // Only switch to results tab if we're not already there
+        if (activeTab !== "results") {
+          console.log("Switching to results tab");
+          setActiveTab("results");
+        }
+      } else {
+        console.log("No valid result for this model or has error");
+      }
     },
     [inferenceResults, activeTab]
   );
