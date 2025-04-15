@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import Image from "next/image";
 
 interface ImageAreaProps {
@@ -9,6 +9,8 @@ interface ImageAreaProps {
     height: number;
     x: number;
     y: number;
+    containerX: number;
+    containerY: number;
   }) => void;
 }
 
@@ -17,29 +19,18 @@ export default function ImageArea({
   onImageChange,
   onImageDimensionsChange,
 }: ImageAreaProps) {
-  const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const lastDimensionsRef = useRef<{
-    width: number;
-    height: number;
-    x: number;
-    y: number;
-  } | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragging(true);
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragging(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragging(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
@@ -68,89 +59,41 @@ export default function ImageArea({
 
   // Add effect to notify parent of image dimensions
   useEffect(() => {
-    if (image && containerRef.current) {
-      const updateDimensions = () => {
-        const img = containerRef.current?.querySelector("img");
-        if (img) {
-          const containerRect = containerRef.current!.getBoundingClientRect();
-          const imgRect = img.getBoundingClientRect();
+    const img = document.querySelector("img");
+    if (!img) return;
 
-          // Get the natural dimensions of the image
-          const naturalWidth = img.naturalWidth;
-          const naturalHeight = img.naturalHeight;
+    const updateDimensions = () => {
+      const containerRect = containerRef.current?.getBoundingClientRect();
+      if (!containerRect) return;
 
-          // Calculate aspect ratios
-          const containerRatio = containerRect.width / containerRect.height;
-          const imageRatio = naturalWidth / naturalHeight;
-
-          // Calculate the actual rendered dimensions
-          let renderedWidth, renderedHeight;
-          if (imageRatio > containerRatio) {
-            // Image is wider than container
-            renderedWidth = containerRect.width;
-            renderedHeight = renderedWidth / imageRatio;
-          } else {
-            // Image is taller than container
-            renderedHeight = containerRect.height;
-            renderedWidth = renderedHeight * imageRatio;
-          }
-
-          // Calculate the starting position (black edge)
-          const x0 = Math.abs(containerRect.width - renderedWidth) / 2;
-          const y0 = Math.abs(containerRect.height - renderedHeight) / 2;
-
-          const newDimensions = {
-            width: renderedWidth,
-            height: renderedHeight,
-            x: x0, // This is the starting position for the transformation
-            y: y0, // This is the starting position for the transformation
-          };
-
-          // Only update if dimensions have changed
-          if (
-            !lastDimensionsRef.current ||
-            lastDimensionsRef.current.width !== newDimensions.width ||
-            lastDimensionsRef.current.height !== newDimensions.height ||
-            lastDimensionsRef.current.x !== newDimensions.x ||
-            lastDimensionsRef.current.y !== newDimensions.y
-          ) {
-            // Clear any pending timeout
-            if (timeoutRef.current) {
-              clearTimeout(timeoutRef.current);
-            }
-
-            // Debounce the update
-            timeoutRef.current = setTimeout(() => {
-              lastDimensionsRef.current = newDimensions;
-              onImageDimensionsChange?.(newDimensions);
-            }, 100);
-          }
-        }
+      const dimensions = {
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+        x: containerRect.left,
+        y: containerRect.top,
+        containerX: containerRect.left,
+        containerY: containerRect.top,
       };
 
-      // Initial update
-      updateDimensions();
+      onImageDimensionsChange?.(dimensions);
+    };
 
-      // Set up resize observer
-      const resizeObserver = new ResizeObserver(updateDimensions);
-      if (containerRef.current) {
-        resizeObserver.observe(containerRef.current);
-      }
+    // Initial update
+    updateDimensions();
 
-      return () => {
-        resizeObserver.disconnect();
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-        }
-      };
-    }
-  }, [image, onImageDimensionsChange]);
+    // Set up resize observer
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    resizeObserver.observe(img);
+
+    // Cleanup
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [onImageDimensionsChange]);
 
   return (
     <div
-      className={`relative w-full h-full flex items-center justify-center ${
-        isDragging ? "bg-gray-800/50" : ""
-      }`}
+      className={`relative w-full h-full flex items-center justify-center`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
