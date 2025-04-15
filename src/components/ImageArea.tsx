@@ -20,6 +20,15 @@ export default function ImageArea({
   onImageDimensionsChange,
 }: ImageAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastDimensionsRef = useRef<{
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+    containerX: number;
+    containerY: number;
+  } | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -66,7 +75,7 @@ export default function ImageArea({
       const containerRect = containerRef.current?.getBoundingClientRect();
       if (!containerRect) return;
 
-      const dimensions = {
+      const newDimensions = {
         width: img.naturalWidth,
         height: img.naturalHeight,
         x: containerRect.left,
@@ -75,7 +84,27 @@ export default function ImageArea({
         containerY: containerRect.top,
       };
 
-      onImageDimensionsChange?.(dimensions);
+      // Only update if dimensions have changed
+      if (
+        !lastDimensionsRef.current ||
+        lastDimensionsRef.current.width !== newDimensions.width ||
+        lastDimensionsRef.current.height !== newDimensions.height ||
+        lastDimensionsRef.current.x !== newDimensions.x ||
+        lastDimensionsRef.current.y !== newDimensions.y ||
+        lastDimensionsRef.current.containerX !== newDimensions.containerX ||
+        lastDimensionsRef.current.containerY !== newDimensions.containerY
+      ) {
+        // Clear any pending timeout
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+
+        // Debounce the update
+        timeoutRef.current = setTimeout(() => {
+          lastDimensionsRef.current = newDimensions;
+          onImageDimensionsChange?.(newDimensions);
+        }, 100);
+      }
     };
 
     // Initial update
@@ -88,6 +117,9 @@ export default function ImageArea({
     // Cleanup
     return () => {
       resizeObserver.disconnect();
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
     };
   }, [onImageDimensionsChange]);
 
