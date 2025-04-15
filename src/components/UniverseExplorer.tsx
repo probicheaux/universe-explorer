@@ -23,6 +23,15 @@ export default function UniverseExplorer() {
   const [activeTab, setActiveTab] = useState<TabType>("find");
   const [inferenceResults, setInferenceResults] = useState<any[]>([]);
   const [hideGuides, setHideGuides] = useState(false);
+  const [imageDimensions, setImageDimensions] = useState<
+    | {
+        width: number;
+        height: number;
+        x: number;
+        y: number;
+      }
+    | undefined
+  >(undefined);
 
   // Generate colors for all classes
   const classColors = useMemo(() => {
@@ -122,7 +131,11 @@ export default function UniverseExplorer() {
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 relative overflow-hidden">
-            <ImageArea image={image} onImageChange={handleImageChange} />
+            <ImageArea
+              image={image}
+              onImageChange={handleImageChange}
+              onImageDimensionsChange={setImageDimensions}
+            />
 
             {/* Tabs for switching between Find and Results */}
             {image && prompt && inferenceResults.length > 0 && (
@@ -192,7 +205,11 @@ export default function UniverseExplorer() {
 
             {/* Results Canvas */}
             {image && prompt && activeTab === "results" && (
-              <ResultsCanvas results={inferenceResults} image={image} />
+              <ResultsCanvas
+                results={inferenceResults}
+                image={image}
+                imageDimensions={imageDimensions}
+              />
             )}
 
             {/* Find Model Button */}

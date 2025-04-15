@@ -1,13 +1,24 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 
 interface ImageAreaProps {
   image: string | undefined;
   onImageChange: ((imageData: string) => void) | undefined;
+  onImageDimensionsChange?: (dimensions: {
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+  }) => void;
 }
 
-export default function ImageArea({ image, onImageChange }: ImageAreaProps) {
+export default function ImageArea({
+  image,
+  onImageChange,
+  onImageDimensionsChange,
+}: ImageAreaProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -48,6 +59,37 @@ export default function ImageArea({ image, onImageChange }: ImageAreaProps) {
     }
   };
 
+  // Add effect to notify parent of image dimensions
+  useEffect(() => {
+    if (image && imageContainerRef.current) {
+      const updateDimensions = () => {
+        const img = imageContainerRef.current?.querySelector("img");
+        if (img) {
+          const rect = img.getBoundingClientRect();
+          onImageDimensionsChange?.({
+            width: rect.width,
+            height: rect.height,
+            x: rect.left,
+            y: rect.top,
+          });
+        }
+      };
+
+      // Initial update
+      updateDimensions();
+
+      // Set up resize observer
+      const resizeObserver = new ResizeObserver(updateDimensions);
+      if (imageContainerRef.current) {
+        resizeObserver.observe(imageContainerRef.current);
+      }
+
+      return () => {
+        resizeObserver.disconnect();
+      };
+    }
+  }, [image, onImageDimensionsChange]);
+
   return (
     <div
       className={`relative w-full h-full flex items-center justify-center ${
@@ -58,7 +100,10 @@ export default function ImageArea({ image, onImageChange }: ImageAreaProps) {
       onDrop={handleDrop}
     >
       {image ? (
-        <div className="relative w-full h-full flex items-center justify-center">
+        <div
+          ref={imageContainerRef}
+          className="relative w-full h-full flex items-center justify-center"
+        >
           <Image
             src={image}
             alt="Uploaded image"

@@ -6,11 +6,18 @@ import BoundingBox from "./BoundingBox";
 interface ResultsCanvasProps {
   results: InferImageResponse[];
   image?: string;
+  imageDimensions?: {
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+  };
 }
 
 export default function ResultsCanvas({
   results = [],
   image,
+  imageDimensions,
 }: ResultsCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState({ x: 1, y: 1 });
@@ -20,9 +27,15 @@ export default function ResultsCanvas({
   console.log("results on canvas", results);
   const boxesToDisplay = results?.[0]?.predictions ?? [];
 
-  // Calculate scale factors and offset when image dimensions change
-  useEffect(() => {
-    if (!containerRef.current || !image) return;
+  const calculateScaleAndOffset = () => {
+    if (!containerRef.current || !image || !imageDimensions) {
+      console.log("Missing required data:", {
+        hasContainer: !!containerRef.current,
+        hasImage: !!image,
+        hasDimensions: !!imageDimensions,
+      });
+      return;
+    }
 
     // Create a temporary image to get the original dimensions
     const img = new Image();
@@ -34,18 +47,8 @@ export default function ResultsCanvas({
         height: imgHeight,
       });
 
-      // Find the image container (the div with centering classes)
-      const imageContainer = document.querySelector(
-        ".relative.w-full.h-full.flex.items-center.justify-center"
-      );
-      if (!imageContainer || !containerRef.current) {
-        console.log("Could not find image container");
-        return;
-      }
-
       // Get the container dimensions
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const imageContainerRect = imageContainer.getBoundingClientRect();
+      const containerRect = containerRef.current!.getBoundingClientRect();
 
       console.log("Container dimensions:", {
         width: containerRect.width,
@@ -54,31 +57,20 @@ export default function ResultsCanvas({
         top: containerRect.top,
       });
 
-      // Find the actual rendered image element
-      const renderedImg = imageContainer.querySelector("img");
-      if (!renderedImg) {
-        console.log("Could not find rendered image element");
-        return;
-      }
-
-      const renderedRect = renderedImg.getBoundingClientRect();
-      console.log("Rendered image dimensions:", {
-        width: renderedRect.width,
-        height: renderedRect.height,
-      });
+      console.log("Rendered image dimensions:", imageDimensions);
 
       // Calculate scale factors based on the actual rendered image size
-      const scaleX = renderedRect.width / imgWidth;
-      const scaleY = renderedRect.height / imgHeight;
+      const scaleX = imageDimensions.width / imgWidth;
+      const scaleY = imageDimensions.height / imgHeight;
 
       console.log("Scale calculation:", {
-        scaleX: `${renderedRect.width} / ${imgWidth} = ${scaleX}`,
-        scaleY: `${renderedRect.height} / ${imgHeight} = ${scaleY}`,
+        scaleX: `${imageDimensions.width} / ${imgWidth} = ${scaleX}`,
+        scaleY: `${imageDimensions.height} / ${imgHeight} = ${scaleY}`,
       });
 
-      // Calculate offset based on the container's position relative to our canvas
-      const offsetX = imageContainerRect.left - containerRect.left;
-      const offsetY = imageContainerRect.top - containerRect.top;
+      // Calculate offset based on the image's position relative to our container
+      const offsetX = imageDimensions.x - containerRect.left;
+      const offsetY = imageDimensions.y - containerRect.top;
 
       console.log("Offset:", { x: offsetX, y: offsetY });
 
@@ -86,7 +78,31 @@ export default function ResultsCanvas({
       setOffset({ x: offsetX, y: offsetY });
     };
     img.src = image;
-  }, [image]);
+  };
+
+  // Calculate scale and offset when image dimensions change
+  useEffect(() => {
+    calculateScaleAndOffset();
+  }, [image, imageDimensions]);
+
+  // Set up resize observer to recalculate when layout changes
+  useEffect(() => {
+    const resizeObserver = new ResizeObserver(() => {
+      calculateScaleAndOffset();
+    });
+
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    // Also observe window resize
+    window.addEventListener("resize", calculateScaleAndOffset);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", calculateScaleAndOffset);
+    };
+  }, [image, imageDimensions]);
 
   return (
     <div ref={containerRef} className="absolute inset-0 z-10">
