@@ -379,7 +379,9 @@ export default function UniverseExplorer() {
 
             // Append new models to existing ones
             currentModels = newModels;
-            setModels((prevModels) => [...prevModels, ...newModels]);
+            setModels((prevModels) =>
+              Array.from(new Set([...prevModels, ...newModels]))
+            );
 
             // Process any pending results
             pendingResults.forEach(({ result, index }) => {
@@ -410,6 +412,7 @@ export default function UniverseExplorer() {
                     [fallbackModelId]: result,
                   }));
                   setInferenceProgress((prev) => prev + 1);
+                  setTotalInferences((prev) => prev + 1);
                 }
               }
             } else {
@@ -418,6 +421,7 @@ export default function UniverseExplorer() {
                 [modelId]: result,
               }));
               setInferenceProgress((prev) => prev + 1);
+              setTotalInferences((prev) => prev + 1);
             }
           },
           onError: (modelId, error) => {
