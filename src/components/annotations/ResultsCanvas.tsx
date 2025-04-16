@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from "react";
+import React, { useRef, useEffect, useMemo, useState } from "react";
 import { getColorForLabel } from "@/utils/colors";
 import { InferImageResponse } from "@/adapters/roboflowAdapter";
 import BoundingBox from "./BoundingBox";
@@ -16,6 +16,8 @@ interface ResultsCanvasProps {
   setOffset: (offset: { x: number; y: number }) => void;
   scale: { x: number; y: number };
   setScale: (scale: { x: number; y: number }) => void;
+  confidenceThreshold?: number;
+  onConfidenceChange?: (threshold: number) => void;
 }
 
 export default function ResultsCanvas({
@@ -26,6 +28,8 @@ export default function ResultsCanvas({
   setOffset,
   scale,
   setScale,
+  confidenceThreshold = 0.5,
+  onConfidenceChange,
 }: ResultsCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -34,8 +38,11 @@ export default function ResultsCanvas({
     if (!result || result.error) {
       return [];
     }
-    return result.predictions ?? [];
-  }, [result]);
+    // Filter predictions based on confidence threshold
+    return (result.predictions ?? []).filter(
+      (prediction) => prediction.confidence >= confidenceThreshold
+    );
+  }, [result, confidenceThreshold]);
 
   const calculateScaleAndOffset = () => {
     if (!containerRef.current || !image || !imageDimensions) {
@@ -124,9 +131,32 @@ export default function ResultsCanvas({
     });
   }, [boxesToDisplay, scale, offset]);
 
+  // Handle confidence threshold change
+  const handleConfidenceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (onConfidenceChange) {
+      onConfidenceChange(parseFloat(e.target.value));
+    }
+  };
+
   return (
     <div ref={containerRef} className="absolute inset-0 z-10">
       {boundingBoxes}
+
+      {/* Confidence Threshold Slider */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800/80 backdrop-blur-sm p-3 rounded-lg shadow-lg flex items-center gap-3 z-20">
+        <span className="text-white text-sm whitespace-nowrap">
+          Confidence: {(confidenceThreshold * 100).toFixed(0)}%
+        </span>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={confidenceThreshold}
+          onChange={handleConfidenceChange}
+          className="w-32 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+        />
+      </div>
     </div>
   );
 }

@@ -49,6 +49,7 @@ export default function UniverseExplorer() {
     from: 0,
     to: 0,
   });
+  const [confidenceThreshold, setConfidenceThreshold] = useState(0.5);
   const cleanupRef = useRef<(() => void) | null>(null);
 
   // Generate colors for all classes
@@ -542,6 +543,7 @@ export default function UniverseExplorer() {
                 classes={classes}
                 totalEvaluatedModels={totalInferences}
                 onEvaluateMore={handleEvaluateMore}
+                confidenceThreshold={confidenceThreshold}
               />
             )}
           </div>
@@ -638,6 +640,8 @@ export default function UniverseExplorer() {
                   setOffset={setOffset}
                   scale={scale}
                   setScale={setScale}
+                  confidenceThreshold={confidenceThreshold}
+                  onConfidenceChange={setConfidenceThreshold}
                 />
               )}
 

@@ -23,6 +23,7 @@ interface ModelsToolbarProps {
   classes: string[];
   totalEvaluatedModels?: number;
   onEvaluateMore?: () => void;
+  confidenceThreshold?: number;
 }
 
 function calculateModelMatch(
@@ -30,12 +31,21 @@ function calculateModelMatch(
   result: InferImageResponse,
   drawnBoxes: any[],
   scale: { x: number; y: number },
-  offset: { x: number; y: number }
+  offset: { x: number; y: number },
+  confidenceThreshold: number = 0.5
 ) {
+  // Filter predictions based on confidence threshold
+  const filteredResult = {
+    ...result,
+    predictions: result.predictions.filter(
+      (pred) => pred.confidence >= confidenceThreshold
+    ),
+  };
+
   // Base score from bounding boxes overlap (0-100)
   const predictionsScore = calculateBoxOverlap(
     drawnBoxes,
-    result,
+    filteredResult,
     scale,
     offset
   );
@@ -379,6 +389,7 @@ function ModelsToolbar({
   classes,
   totalEvaluatedModels = 0,
   onEvaluateMore,
+  confidenceThreshold = 0.5,
 }: ModelsToolbarProps) {
   // Memoize the match calculations for each model
   const modelMatches = useMemo(() => {
@@ -394,13 +405,23 @@ function ModelsToolbar({
           result,
           drawnBoxes,
           scale,
-          offset
+          offset,
+          confidenceThreshold
         );
       }
     });
 
     return matches;
-  }, [models, results, drawnBoxes, imageDimensions, scale, offset, classes]);
+  }, [
+    models,
+    results,
+    drawnBoxes,
+    imageDimensions,
+    scale,
+    offset,
+    classes,
+    confidenceThreshold,
+  ]);
 
   // Filter out models with errors and calculate match percentages
   const sortedModels = useMemo(() => {
