@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo, useState } from "react";
+import React, { useRef, useEffect, useMemo } from "react";
 import { getColorForLabel } from "@/utils/colors";
 import { InferImageResponse } from "@/adapters/roboflowAdapter";
 import BoundingBox from "./BoundingBox";

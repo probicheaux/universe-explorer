@@ -53,11 +53,11 @@ function calculateModelMatch(
   const semanticScore = model.semanticScore;
 
   if (metadataScore && semanticScore) {
-    return predictionsScore * 0.4 + semanticScore * 0.4 + metadataScore * 0.2;
+    return predictionsScore * 0.45 + semanticScore * 0.45 + metadataScore * 0.1;
   } else if (!semanticScore && metadataScore) {
-    return predictionsScore * 0.7 + metadataScore * 0.3;
+    return predictionsScore * 0.9 + metadataScore * 0.1;
   } else if (semanticScore && !metadataScore) {
-    return predictionsScore * 0.5 + semanticScore * 0.5;
+    return predictionsScore * 0.45 + semanticScore * 0.45;
   } else {
     return predictionsScore;
   }

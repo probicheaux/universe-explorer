@@ -54,6 +54,89 @@ function getBoxArea(box: Box): number {
 }
 
 /**
+ * Calculate the center point of a box
+ */
+function getBoxCenter(box: Box): { x: number; y: number } {
+  return {
+    x: box.x + box.width / 2,
+    y: box.y + box.height / 2,
+  };
+}
+
+/**
+ * Calculate the distance between two points
+ */
+function getDistance(
+  point1: { x: number; y: number },
+  point2: { x: number; y: number }
+): number {
+  return Math.sqrt(
+    Math.pow(point2.x - point1.x, 2) + Math.pow(point2.y - point1.y, 2)
+  );
+}
+
+/**
+ * Calculate the aspect ratio of a box
+ */
+function getAspectRatio(box: Box): number {
+  return box.width / box.height;
+}
+
+/**
+ * Calculate the similarity between two boxes based on position and shape
+ * @param box1 First box
+ * @param box2 Second box
+ * @param imageWidth Width of the image (for normalization)
+ * @param imageHeight Height of the image (for normalization)
+ * @returns A score between 0 and 1, where 1 is a perfect match
+ */
+function calculateBoxSimilarity(
+  box1: Box,
+  box2: Box,
+  imageWidth: number,
+  imageHeight: number
+): number {
+  // Calculate center points
+  const center1 = getBoxCenter(box1);
+  const center2 = getBoxCenter(box2);
+
+  // Calculate distance between centers (normalized by image diagonal)
+  const imageDiagonal = Math.sqrt(
+    Math.pow(imageWidth, 2) + Math.pow(imageHeight, 2)
+  );
+  const distance = getDistance(center1, center2);
+  const normalizedDistance = Math.min(1, distance / (imageDiagonal * 0.5));
+
+  // Calculate position similarity (inverse of normalized distance)
+  const positionSimilarity = 1 - normalizedDistance;
+
+  // Calculate aspect ratio similarity
+  const aspectRatio1 = getAspectRatio(box1);
+  const aspectRatio2 = getAspectRatio(box2);
+  const aspectRatioDiff = Math.abs(aspectRatio1 - aspectRatio2);
+  const aspectRatioSimilarity = Math.max(0, 1 - aspectRatioDiff);
+
+  // Calculate size similarity (prefer boxes of similar size)
+  const area1 = getBoxArea(box1);
+  const area2 = getBoxArea(box2);
+  const areaRatio = Math.min(area1, area2) / Math.max(area1, area2);
+
+  // Calculate intersection over union
+  const intersection = getIntersectionArea(box1, box2);
+  const union = area1 + area2 - intersection;
+  const iou = intersection / union;
+
+  // Combine all factors with weights
+  // Position is most important, then IOU, then aspect ratio, then size
+  return (
+    positionSimilarity * 0.4 +
+    iou * 0.4 +
+    aspectRatioSimilarity * 0.15 +
+    areaRatio * 0.05
+  );
+}
+
+/**
  * Calculate the match percentage between drawn boxes and model prediction boxes
  * @param drawnBoxes The boxes drawn by the user (in rendered image coordinates)
  * @param modelResult The inference result from a model (in original image coordinates)
@@ -84,59 +167,46 @@ export function calculateBoxOverlap(
     height: pred.height,
   }));
 
-  // Calculate total area of drawn boxes
-  const totalDrawnArea = convertedDrawnBoxes.reduce(
-    (sum, box) => sum + getBoxArea(box),
-    0
-  );
-  if (totalDrawnArea === 0) return 0;
-
-  // Calculate total intersection area
-  let totalIntersectionArea = 0;
-
-  for (const drawnBox of convertedDrawnBoxes) {
-    let maxIntersection = 0;
-
-    for (const modelBox of modelBoxes) {
-      const intersection = getIntersectionArea(drawnBox, modelBox);
-      maxIntersection = Math.max(maxIntersection, intersection);
-    }
-
-    totalIntersectionArea += maxIntersection;
+  // If there are no model predictions, return 0
+  if (modelBoxes.length === 0) {
+    return 0;
   }
 
-  // Calculate base match percentage from area overlap
-  const baseMatchPercentage = (totalIntersectionArea / totalDrawnArea) * 100;
-
-  // Apply penalties based on box count difference
-  const boxCountDifference = Math.abs(
-    convertedDrawnBoxes.length - modelBoxes.length
+  // Estimate image dimensions from the boxes
+  // This is a rough estimate and could be improved
+  const maxX = Math.max(
+    ...convertedDrawnBoxes.map((box) => box.x + box.width),
+    ...modelBoxes.map((box) => box.x + box.width)
   );
-  const boxCountPenalty = Math.min(boxCountDifference * 10, 50); // Max 50% penalty
-
-  // Apply penalties based on size distribution
-  const drawnBoxSizes = convertedDrawnBoxes.map((box) => getBoxArea(box));
-  const modelBoxSizes = modelBoxes.map((box) => getBoxArea(box));
-
-  // Calculate average size difference
-  const avgDrawnSize =
-    drawnBoxSizes.reduce((sum, size) => sum + size, 0) / drawnBoxSizes.length;
-  const avgModelSize =
-    modelBoxSizes.reduce((sum, size) => sum + size, 0) / modelBoxSizes.length;
-
-  // Calculate size difference penalty (up to 30%)
-  const sizeDifferencePenalty = Math.min(
-    (Math.abs(avgDrawnSize - avgModelSize) /
-      Math.max(avgDrawnSize, avgModelSize)) *
-      30,
-    30
+  const maxY = Math.max(
+    ...convertedDrawnBoxes.map((box) => box.y + box.height),
+    ...modelBoxes.map((box) => box.y + box.height)
   );
+  const imageWidth = maxX;
+  const imageHeight = maxY;
 
-  // Calculate final match percentage with penalties
-  const finalMatchPercentage = Math.max(
-    0,
-    baseMatchPercentage - boxCountPenalty - sizeDifferencePenalty
-  );
+  // For each drawn box, find the best matching model box
+  const matchScores: number[] = [];
 
-  return Math.round(finalMatchPercentage);
+  for (const drawnBox of convertedDrawnBoxes) {
+    let bestMatchScore = 0;
+
+    for (const modelBox of modelBoxes) {
+      const similarity = calculateBoxSimilarity(
+        drawnBox,
+        modelBox,
+        imageWidth,
+        imageHeight
+      );
+
+      bestMatchScore = Math.max(bestMatchScore, similarity);
+    }
+
+    matchScores.push(bestMatchScore);
+  }
+
+  // Calculate the average match score and convert to percentage
+  const averageMatchScore =
+    matchScores.reduce((sum, score) => sum + score, 0) / matchScores.length;
+  return Math.round(averageMatchScore * 100);
 }
