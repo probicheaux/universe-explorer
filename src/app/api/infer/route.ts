@@ -2,7 +2,6 @@ import { NextRequest } from "next/server";
 import { searchTopObjectDetectionTrainedDatasets } from "@/adapters/elasticAdapter";
 import { getAndCache } from "@/utils/cache";
 import { inferImage } from "@/adapters/roboflowAdapter";
-import async from "async";
 import { ModelInfo } from "@/utils/api/inference";
 
 // Helper function to create a stream message
@@ -112,10 +111,7 @@ export async function POST(request: NextRequest) {
         )
       );
 
-      // Process inferences in batches with controlled concurrency
-      const BATCH_SIZE = 500;
-
-      await async.eachLimit(topModels, BATCH_SIZE, async (model: ModelInfo) => {
+      const processModel = async (model: ModelInfo) => {
         try {
           const modelUrl = `${model.url}/${model.version}`;
           const result = await inferImage(modelUrl, image);
@@ -146,7 +142,9 @@ export async function POST(request: NextRequest) {
 
           return { modelId: model.id, success: false, error };
         }
-      });
+      };
+
+      await Promise.all(topModels.map(processModel));
 
       // Send completion message
       await writer.write(
