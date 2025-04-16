@@ -251,60 +251,74 @@ export default function UniverseExplorer() {
         }
       };
 
-      const cleanup = api.inference.inferImage(base64Data, {
-        onModels: (newModels: ModelInfo[], from?: number, to?: number) => {
-          setPagination({ from: from ?? 0, to: to ?? newModels?.length ?? 0 });
-          currentModels = newModels;
-          setModels(newModels);
-          setActiveTab("results");
+      const cleanup = api.inference.inferImage(
+        base64Data,
+        {
+          onModels: (newModels: ModelInfo[], from?: number, to?: number) => {
+            setPagination({
+              from: from ?? 0,
+              to: to ?? newModels?.length ?? 0,
+            });
+            currentModels = newModels;
+            setModels(newModels);
+            setActiveTab("results");
 
-          if (newModels.length > 0) {
-            setSelectedModel(newModels[0].id);
-          }
-
-          // Process any pending results
-          pendingResults.forEach(({ result, index }) => {
-            if (index < newModels.length) {
-              const modelId = newModels[index].id;
-              resultsBuffer[modelId] = result;
+            if (newModels.length > 0) {
+              setSelectedModel(newModels[0].id);
             }
-          });
-          pendingResults = [];
-        },
-        onInference: (modelId, result) => {
-          if (!modelId) {
-            // Store the result temporarily if we don't have models yet
-            if (currentModels.length === 0) {
-              pendingResults.push({ result, index: pendingResults.length });
-            } else {
-              // Find the first model without results
-              const modelIndex = currentModels.findIndex(
-                (m) => !resultsBuffer[m.id]
-              );
-              if (modelIndex !== -1) {
-                const fallbackModelId = currentModels[modelIndex].id;
-                resultsBuffer[fallbackModelId] = result;
-                setInferenceProgress((prev) => prev + 1);
-                setTotalInferences((prev) => prev + 1);
-                scheduleUpdate();
+
+            // Process any pending results
+            pendingResults.forEach(({ result, index }) => {
+              if (index < newModels.length) {
+                const modelId = newModels[index].id;
+                resultsBuffer[modelId] = result;
               }
+            });
+            pendingResults = [];
+          },
+          onInference: (modelId, result) => {
+            if (!modelId) {
+              // Store the result temporarily if we don't have models yet
+              if (currentModels.length === 0) {
+                pendingResults.push({ result, index: pendingResults.length });
+              } else {
+                // Find the first model without results
+                const modelIndex = currentModels.findIndex(
+                  (m) => !resultsBuffer[m.id]
+                );
+                if (modelIndex !== -1) {
+                  const fallbackModelId = currentModels[modelIndex].id;
+                  resultsBuffer[fallbackModelId] = result;
+                  setInferenceProgress((prev) => prev + 1);
+                  setTotalInferences((prev) => prev + 1);
+                  scheduleUpdate();
+                }
+              }
+            } else {
+              resultsBuffer[modelId] = result;
+              setInferenceProgress((prev) => prev + 1);
+              setTotalInferences((prev) => prev + 1);
+              scheduleUpdate();
             }
-          } else {
-            resultsBuffer[modelId] = result;
-            setInferenceProgress((prev) => prev + 1);
-            setTotalInferences((prev) => prev + 1);
-            scheduleUpdate();
-          }
+          },
+          onError: (modelId, error) => {
+            console.error(`Error with model ${modelId}:`, error);
+          },
+          onComplete: () => {
+            // Final update of results
+            setInferenceResults((prev) => ({ ...prev, ...resultsBuffer }));
+            setIsLoading(false);
+          },
         },
-        onError: (modelId, error) => {
-          console.error(`Error with model ${modelId}:`, error);
-        },
-        onComplete: () => {
-          // Final update of results
-          setInferenceResults((prev) => ({ ...prev, ...resultsBuffer }));
-          setIsLoading(false);
-        },
-      });
+        {
+          searchClasses: classes.map((cls) => ({
+            class: cls,
+            drawCount: boxes?.filter((box) => box.class === cls)?.length ?? 0,
+          })),
+          from: 0,
+          to: 100,
+        }
+      );
 
       cleanupRef.current = cleanup;
     } catch (error) {
@@ -435,7 +449,10 @@ export default function UniverseExplorer() {
           },
         },
         {
-          searchClasses: classes,
+          searchClasses: classes.map((cls) => ({
+            class: cls,
+            drawCount: boxes?.filter((box) => box.class === cls)?.length ?? 0,
+          })),
           from: pagination.to,
           to: pagination.to + 100, // Request next 100 models
         }

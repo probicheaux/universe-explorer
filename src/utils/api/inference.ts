@@ -1,5 +1,6 @@
 export interface ModelInfo {
   id: string;
+  datasetId: string;
   name: string;
   description?: string;
   type?: string;
@@ -14,19 +15,19 @@ export interface ModelInfo {
       downloads: number;
       views: number;
     };
-    last30DaysTotals: {
-      downloads: number;
-      views: number;
-    };
   };
   universe?: {
     stars: number;
   };
+  models?: number[];
   icon?: string;
+  iconOwner?: string;
+  iconHasAnnotation?: boolean;
   annotation?: string;
   url?: string;
   version?: number;
   metadataScore?: number;
+  semanticScore?: number;
 }
 
 export interface InferenceCallbacks {
@@ -37,7 +38,10 @@ export interface InferenceCallbacks {
 }
 
 export interface InferenceOptions {
-  searchClasses?: string[];
+  searchClasses?: {
+    class: string;
+    drawCount: number;
+  }[];
   from?: number;
   to?: number;
 }
@@ -48,6 +52,8 @@ export const inferImage = (
   options: InferenceOptions = {}
 ): (() => void) => {
   const base64Data = image.includes(",") ? image.split(",")[1] : image;
+
+  console.log("inferImage options", JSON.stringify(options, null, 2));
 
   // Create POST request with the image data and pagination parameters
   const body = JSON.stringify({

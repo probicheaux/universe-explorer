@@ -30,26 +30,27 @@ function calculateModelMatch(
   result: InferImageResponse,
   drawnBoxes: any[],
   scale: { x: number; y: number },
-  offset: { x: number; y: number },
-  classes: string[]
+  offset: { x: number; y: number }
 ) {
   // Base score from bounding boxes overlap (0-100)
-  const boxOverlap = calculateBoxOverlap(drawnBoxes, result, scale, offset);
+  const predictionsScore = calculateBoxOverlap(
+    drawnBoxes,
+    result,
+    scale,
+    offset
+  );
+  const metadataScore = model.metadataScore;
+  const semanticScore = model.semanticScore;
 
-  // If no search classes provided or no metadata score available, just return the box overlap
-  if (!classes.length || !model.metadataScore) {
-    console.log(
-      "no search classes or metadata score, returning only box overlap for match",
-      boxOverlap
-    );
-    return boxOverlap;
+  if (metadataScore && semanticScore) {
+    return predictionsScore * 0.4 + semanticScore * 0.4 + metadataScore * 0.2;
+  } else if (!semanticScore && metadataScore) {
+    return predictionsScore * 0.7 + metadataScore * 0.3;
+  } else if (semanticScore && !metadataScore) {
+    return predictionsScore * 0.5 + semanticScore * 0.5;
+  } else {
+    return predictionsScore;
   }
-
-  // Use the pre-calculated metadata score from the backend
-  // Weight: 70% box overlap, 30% metadata match
-  const combinedScore = boxOverlap * 0.7 + model.metadataScore * 0.3;
-
-  return combinedScore;
 }
 
 // Memoize the individual model card to prevent unnecessary re-renders
@@ -393,8 +394,7 @@ function ModelsToolbar({
           result,
           drawnBoxes,
           scale,
-          offset,
-          classes
+          offset
         );
       }
     });

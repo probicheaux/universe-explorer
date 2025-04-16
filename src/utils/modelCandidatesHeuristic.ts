@@ -30,11 +30,8 @@ export function getFuseInstance<T>(
 }
 
 // Calculate metadata score based on class matches
-export function calculateMetadataScore(
-  model: any,
-  searchClasses: string[]
-): number {
-  if (!searchClasses || searchClasses.length === 0) {
+export function calculateMetadataScore(model: any, classes: string[]): number {
+  if (!classes || classes.length === 0) {
     return 0;
   }
 
@@ -51,7 +48,7 @@ export function calculateMetadataScore(
     );
 
     // Search for each class in the model's classes
-    for (const searchClass of searchClasses) {
+    for (const searchClass of classes) {
       const searchResults = classFuse.search(searchClass);
 
       if (searchResults.length > 0) {
@@ -93,7 +90,7 @@ export function calculateMetadataScore(
       `name-${model.id}`
     );
 
-    for (const searchClass of searchClasses) {
+    for (const searchClass of classes) {
       const searchResults = nameFuse.search(searchClass);
 
       if (searchResults.length > 0) {
@@ -116,7 +113,7 @@ export function calculateMetadataScore(
       `desc-${model.id}`
     );
 
-    for (const searchClass of searchClasses) {
+    for (const searchClass of classes) {
       const searchResults = descFuse.search(searchClass);
 
       if (searchResults.length > 0) {
