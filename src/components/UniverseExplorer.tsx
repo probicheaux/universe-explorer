@@ -43,6 +43,7 @@ export default function UniverseExplorer() {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [inferenceProgress, setInferenceProgress] = useState(0);
+  const [totalInferences, setTotalInferences] = useState(0);
   const [isEvaluatingMore, setIsEvaluatingMore] = useState(false);
   const [pagination, setPagination] = useState({
     from: 0,
@@ -224,6 +225,7 @@ export default function UniverseExplorer() {
     setSelectedModel(null);
     setUserSelectedModel(false);
     setInferenceProgress(0);
+    setTotalInferences(0);
     setPagination({ from: 0, to: 0 });
 
     try {
@@ -277,6 +279,7 @@ export default function UniverseExplorer() {
                   [fallbackModelId]: result,
                 }));
                 setInferenceProgress((prev) => prev + 1);
+                setTotalInferences((prev) => prev + 1);
               }
             }
           } else {
@@ -285,6 +288,7 @@ export default function UniverseExplorer() {
               [modelId]: result,
             }));
             setInferenceProgress((prev) => prev + 1);
+            setTotalInferences((prev) => prev + 1);
           }
         },
         onError: (modelId, error) => {
@@ -342,6 +346,7 @@ export default function UniverseExplorer() {
 
     setIsEvaluatingMore(true);
     setIsLoading(true);
+    setInferenceProgress(0);
 
     try {
       const base64Data = image.includes(",") ? image.split(",")[1] : image;
@@ -492,7 +497,7 @@ export default function UniverseExplorer() {
                 selectedModel={selectedModel ?? undefined}
                 autoSelectFirstModel={!userSelectedModel}
                 classes={classes}
-                totalEvaluatedModels={inferenceProgress}
+                totalEvaluatedModels={totalInferences}
                 onEvaluateMore={handleEvaluateMore}
               />
             )}

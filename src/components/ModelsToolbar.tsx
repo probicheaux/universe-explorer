@@ -453,7 +453,7 @@ function ModelsToolbar({
   return (
     <div className="w-full h-full bg-gray-900/80 backdrop-blur-md rounded-l-lg p-4 border border-gray-800 shadow-lg flex flex-col">
       <h2 className="text-sm font-medium text-gray-400 mb-4">
-        Available Models
+        Suggested Models
       </h2>
       <div className="flex-1 overflow-hidden">
         {isLoading && models.length === 0 ? (
@@ -476,10 +476,14 @@ function ModelsToolbar({
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs text-gray-400">
-              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              <span>Models ready for inference</span>
-            </div>
-            <div className="text-xs text-gray-400">
+              <div className="h-4 w-4">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                  <path
+                    fill="currentColor"
+                    d="M176 24c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 40c-35.3 0-64 28.7-64 64l-40 0c-13.3 0-24 10.7-24 24s10.7 24 24 24l40 0 0 56-40 0c-13.3 0-24 10.7-24 24s10.7 24 24 24l40 0 0 56-40 0c-13.3 0-24 10.7-24 24s10.7 24 24 24l40 0c0 35.3 28.7 64 64 64l0 40c0 13.3 10.7 24 24 24s24-10.7 24-24l0-40 56 0 0 40c0 13.3 10.7 24 24 24s24-10.7 24-24l0-40 56 0 0 40c0 13.3 10.7 24 24 24s24-10.7 24-24l0-40c35.3 0 64-28.7 64-64l40 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-40 0 0-56 40 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-40 0 0-56 40 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-40 0c0-35.3-28.7-64-64-64l0-40c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 40-56 0 0-40c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 40-56 0 0-40zM160 128l192 0c17.7 0 32 14.3 32 32l0 192c0 17.7-14.3 32-32 32l-192 0c-17.7 0-32-14.3-32-32l0-192c0-17.7 14.3-32 32-32zm192 32l-192 0 0 192 192 0 0-192z"
+                  />
+                </svg>
+              </div>
               {totalEvaluatedModels} evaluated models
             </div>
           </div>
@@ -489,8 +493,8 @@ function ModelsToolbar({
               disabled={isLoading}
               className={`mt-2 w-full py-2 px-3 rounded-md text-sm font-medium transition-colors ${
                 isLoading
-                  ? "bg-gray-800 text-gray-500 cursor-not-allowed"
-                  : "bg-blue-600 text-white hover:bg-blue-700"
+                  ? "bg-gray-800 cursor-default text-gray-500"
+                  : "bg-blue-600 cursor-pointer text-white hover:bg-blue-700"
               }`}
             >
               {isLoading ? "Evaluating..." : "Evaluate More Models"}
