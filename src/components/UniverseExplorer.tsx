@@ -242,9 +242,9 @@ export default function UniverseExplorer() {
       const UPDATE_INTERVAL = 100; // Update UI every 100ms
 
       const cleanup = api.inference.inferImage(base64Data, {
-        onModels: (newModels: ModelInfo[], totalCount: number) => {
-          setPagination({ from: pagination.to, to: totalCount }); // Update pagination
-          console.log("Pagination:", pagination);
+        onModels: (newModels: ModelInfo[], from?: number, to?: number) => {
+          // Update pagination using the 'to' parameter if available
+          setPagination({ from: from ?? 0, to: to ?? newModels?.length ?? 0 });
           currentModels = newModels;
           setModels(newModels);
           setActiveTab("results");
@@ -366,13 +366,7 @@ export default function UniverseExplorer() {
       const cleanup = api.inference.inferImage(
         base64Data,
         {
-          onModels: (
-            newModels: ModelInfo[],
-            totalInferences: number,
-            totalModels?: number,
-            from?: number,
-            to?: number
-          ) => {
+          onModels: (newModels: ModelInfo[], from?: number, to?: number) => {
             // Update pagination for next batch
             if (from !== undefined && to !== undefined) {
               setPagination({ from, to });

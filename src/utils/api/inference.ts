@@ -30,13 +30,7 @@ export interface ModelInfo {
 }
 
 export interface InferenceCallbacks {
-  onModels: (
-    models: ModelInfo[],
-    totalInferences: number,
-    totalModels?: number,
-    from?: number,
-    to?: number
-  ) => void;
+  onModels: (models: ModelInfo[], from?: number, to?: number) => void;
   onInference: (modelId: string | null, result: any) => void;
   onError: (modelId: string | null, error: any) => void;
   onComplete: () => void;
@@ -125,8 +119,6 @@ export const inferImage = (
                   case "models":
                     callbacks.onModels?.(
                       parsedData.models,
-                      parsedData.totalInferences,
-                      parsedData.totalModels,
                       parsedData.from,
                       parsedData.to
                     );
@@ -173,8 +165,6 @@ export const inferImage = (
                 case "models":
                   callbacks.onModels?.(
                     parsedData.models,
-                    parsedData.totalInferences,
-                    parsedData.totalModels,
                     parsedData.from,
                     parsedData.to
                   );

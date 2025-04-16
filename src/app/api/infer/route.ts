@@ -83,7 +83,6 @@ export async function POST(request: NextRequest) {
 
       // Get promising models
       const MODELS_LIMIT = 100;
-      const totalModels = datasets.hits.hits.length;
 
       // Apply pagination if from and to are provided
       const startIndex = from !== undefined ? from : 0;
@@ -132,8 +131,6 @@ export async function POST(request: NextRequest) {
         encoder.encode(
           createStreamMessage("models", {
             models: bestModelCandidates,
-            totalInferences: bestModelCandidates.length,
-            totalModels: totalModels,
             from: startIndex,
             to: endIndex,
           })
