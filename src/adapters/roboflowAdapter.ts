@@ -48,6 +48,7 @@ export const inferImage = async (
         url: `${BASE_URL}${modelUrl}`,
         params: {
           api_key: apiKey,
+          confidence: 0.01,
         },
         data: imageB64,
         headers: {
