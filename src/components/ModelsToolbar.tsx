@@ -283,6 +283,57 @@ const ModelCard = React.memo(
 
 ModelCard.displayName = "ModelCard";
 
+// Create a memoized row component that only depends on the specific model data
+const ModelRow = React.memo(
+  ({
+    model,
+    result,
+    boxOverlap,
+    isSelected,
+    isBestMatch,
+    onSelect,
+    style,
+  }: {
+    model: ModelInfo;
+    result: InferImageResponse | undefined;
+    boxOverlap: number;
+    isSelected: boolean;
+    isBestMatch: boolean;
+    onSelect: (modelId: string) => void;
+    style: React.CSSProperties;
+  }) => {
+    return (
+      <div style={{ ...style, paddingBottom: "12px", paddingTop: "12px" }}>
+        <ModelCard
+          model={model}
+          result={result}
+          onSelect={onSelect}
+          boxOverlap={boxOverlap}
+          isSelected={isSelected}
+          isBestMatch={isBestMatch}
+        />
+      </div>
+    );
+  },
+  (prevProps, nextProps) => {
+    // Only re-render if these specific props change
+    return (
+      prevProps.model.id === nextProps.model.id &&
+      prevProps.isSelected === nextProps.isSelected &&
+      prevProps.isBestMatch === nextProps.isBestMatch &&
+      prevProps.boxOverlap === nextProps.boxOverlap &&
+      // Check if the result has changed
+      (prevProps.result === nextProps.result ||
+        (prevProps.result?.error === nextProps.result?.error &&
+          prevProps.result?.predictions?.length ===
+            nextProps.result?.predictions?.length &&
+          prevProps.result?.time === nextProps.result?.time))
+    );
+  }
+);
+
+ModelRow.displayName = "ModelRow";
+
 function ModelsToolbar({
   models = [],
   results = {},
@@ -340,7 +391,7 @@ function ModelsToolbar({
     }
   }, [sortedModels, autoSelectFirstModel, onModelSelect]);
 
-  // Memoize the row renderer to prevent unnecessary re-renders
+  // Create a row renderer that uses the memoized row component
   const Row = useCallback(
     ({ index, style }: { index: number; style: React.CSSProperties }) => {
       const model = sortedModels[index];
@@ -350,16 +401,15 @@ function ModelsToolbar({
       const boxOverlap = modelOverlaps[model.id] || 0;
 
       return (
-        <div style={{ ...style, paddingBottom: "12px", paddingTop: "12px" }}>
-          <ModelCard
-            model={model}
-            result={modelResult}
-            onSelect={onModelSelect || (() => {})}
-            boxOverlap={boxOverlap}
-            isSelected={isSelected}
-            isBestMatch={isBestMatch}
-          />
-        </div>
+        <ModelRow
+          model={model}
+          result={modelResult}
+          boxOverlap={boxOverlap}
+          isSelected={isSelected}
+          isBestMatch={isBestMatch}
+          onSelect={onModelSelect || (() => {})}
+          style={style}
+        />
       );
     },
     [sortedModels, results, onModelSelect, modelOverlaps, selectedModel]
