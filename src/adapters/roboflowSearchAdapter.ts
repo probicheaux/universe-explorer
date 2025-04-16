@@ -34,7 +34,8 @@ type RoboflowSearchRangedQueryValue = { gte?: number; lte?: number };
 
 interface RoboflowSearchDatasetPayload {
   index?: string;
-  prompt: string;
+  prompt?: string;
+  prompt_image?: string;
   type?: string;
   from: number;
   size: number;

@@ -379,30 +379,54 @@ function ModelsToolbar({
       );
       const metadataScore = model.metadataScore;
       const semanticScore = model.semanticScore;
+      const imageSimilarityScore = model.imageSimilarityScore;
 
-      if (
-        ["COCO Dataset", "Dogcolor", "DOG", "Fall Detection"].includes(
-          model.name
-        )
-      ) {
-        console.log(
-          `predictionsScore, metadataScore, semanticScore for ${model.name}`,
-          predictionsScore,
-          metadataScore,
-          semanticScore
-        );
+      const scores = {
+        predictionsScore,
+        metadataScore,
+        semanticScore,
+        imageSimilarityScore,
+      };
+
+      const WEIGHTS = {
+        predictionsScore: 0.5,
+        semanticScore: 0.2,
+        imageSimilarityScore: 0.2,
+        metadataScore: 0.1,
+      };
+
+      const PENALTY_FOR_MISSING_SCORES = {
+        predictionsScore: 0.5,
+        semanticScore: 0.02,
+        imageSimilarityScore: 0.02,
+        metadataScore: 0.05,
+      };
+
+      let normalizeFactor = 0;
+      const score = Object.entries(scores).reduce(
+        (acc, [scoreKey, scoreValue]) => {
+          if (scoreValue !== undefined) {
+            normalizeFactor += WEIGHTS[scoreKey as keyof typeof WEIGHTS];
+            return acc + scoreValue * WEIGHTS[scoreKey as keyof typeof WEIGHTS];
+          } else {
+            normalizeFactor +=
+              PENALTY_FOR_MISSING_SCORES[
+                scoreKey as keyof typeof PENALTY_FOR_MISSING_SCORES
+              ];
+          }
+          return acc;
+        },
+        0
+      );
+
+      if (["COCO Dataset", "DOG"].includes(model.name)) {
+        console.log("scores", scores);
+        console.log("normalizeFactor", normalizeFactor);
+        console.log("score without normalize", score);
+        console.log("final score", score / normalizeFactor);
       }
-      if (metadataScore && semanticScore) {
-        return (
-          predictionsScore * 0.65 + semanticScore * 0.25 + metadataScore * 0.1
-        );
-      } else if (!semanticScore && metadataScore) {
-        return predictionsScore * 0.7 + metadataScore * 0.3;
-      } else if (semanticScore && !metadataScore) {
-        return predictionsScore * 0.7 + semanticScore * 0.3;
-      } else {
-        return predictionsScore;
-      }
+
+      return score / normalizeFactor;
     },
     [drawnBoxes, scale, offset]
   );

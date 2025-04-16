@@ -28,6 +28,7 @@ export interface ModelInfo {
   version?: number;
   metadataScore?: number;
   semanticScore?: number;
+  imageSimilarityScore?: number;
 }
 
 export interface InferenceCallbacks {

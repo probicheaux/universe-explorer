@@ -72,7 +72,7 @@ const getClient = (): Client => {
 
 export const searchDatasets = async ({
   query,
-  size = 10000,
+  size = 1000,
   fields = FIELDS_TO_FETCH,
   sort = DEFAULT_SORT,
   searchAfter,
@@ -124,7 +124,7 @@ export const searchDatasetsByDatasetIds = async (datasetIds: string[]) => {
 
   return searchDatasets({
     query,
-    size: 10000,
+    size: 1000,
     fields: FIELDS_TO_FETCH,
     sort: DEFAULT_SORT,
   });

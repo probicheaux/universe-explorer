@@ -18,18 +18,121 @@ function createStreamMessage(event: string, data: any) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-// Helper function to measure time
-function measureTime(label: string, fn: () => Promise<any>): Promise<any> {
-  const start = Date.now();
-  return fn().then((result) => {
-    const end = Date.now();
-    console.log(`⏱️ ${label}: ${end - start}ms`);
-    return result;
-  });
-}
-
 interface InferRequestBody extends InferenceOptions {
   image: string;
+}
+
+async function getGoodModels() {
+  const result = await getAndCache(
+    "object-detection-datasets",
+    searchTopObjectDetectionTrainedDatasets,
+    60 * 60 * 24 * 30 // 30 days
+  );
+
+  return result.hits.hits;
+}
+
+async function getMetadataSimilarityModels({
+  from,
+  to,
+  classes,
+}: {
+  from: number;
+  to: number;
+  classes: string[];
+}) {
+  const goodModels = await getGoodModels();
+
+  const metadataSimilarityModels = goodModels.map((model) => ({
+    ...model,
+    metadataScore: calculateMetadataScore(model._source, classes),
+  }));
+
+  return metadataSimilarityModels
+    .sort((a, b) => (b.metadataScore ?? 0) - (a.metadataScore ?? 0))
+    .slice(from, to);
+}
+
+async function getImageSimilarityModels({
+  image,
+  from,
+  to,
+}: {
+  image: string;
+  from: number;
+  to: number;
+}) {
+  const result = await roboflowSearchDatasets({
+    prompt_image: image,
+    trainedVersion: true,
+    filter_nsfw: true,
+    "-forkedFrom": { exists: true },
+    images: {
+      gte: 25, // don't show empty datasets or very tiny datasets
+    },
+    public: true,
+    type: "object-detection",
+    fields: [],
+    sort: [{ _score: "desc" }],
+    size: (to ?? 100) - (from ?? 0),
+    from: from ?? 0,
+  });
+
+  const datasetIds = result.hits.map((hit) => hit._id) as string[];
+
+  const completeImageSimilarityData = await searchDatasetsByDatasetIds(
+    datasetIds
+  );
+
+  return completeImageSimilarityData.hits.hits.map((hit) => ({
+    ...hit,
+    imageSimilarityScore:
+      (result.hits.find((s) => s._id === hit._id)?._score ?? 0) * 100,
+  }));
+}
+
+async function getSemanticSearchModels({
+  term,
+  from,
+  to,
+}: {
+  term: string;
+  from: number;
+  to: number;
+}) {
+  if (!term) {
+    return [];
+  }
+
+  const result = await roboflowSearchDatasets({
+    prompt: term,
+    trainedVersion: true,
+    filter_nsfw: true,
+    "-forkedFrom": { exists: true },
+    images: {
+      gte: 25, // don't show empty datasets or very tiny datasets
+    },
+    public: true,
+    type: "object-detection",
+    fields: ["dataset_id"],
+    sort: [{ _score: "desc" }],
+    size: (to ?? 100) - (from ?? 0),
+    from: from ?? 0,
+  });
+
+  const datasetIds = result.hits.map((hit) => hit._id) as string[];
+
+  const completeSemanticSearchData = await searchDatasetsByDatasetIds(
+    datasetIds
+  );
+
+  const scores = result.hits.map((hit) => hit._score ?? 0);
+  const normalizeFactor = 100 / Math.max(...scores);
+
+  return completeSemanticSearchData.hits.hits.map((hit) => ({
+    ...hit,
+    semanticScore: (hit._score ?? 0) * normalizeFactor,
+  }));
 }
 
 export async function POST(request: NextRequest) {
@@ -101,94 +204,71 @@ export async function POST(request: NextRequest) {
         return;
       }
 
-      // Get the dataset information
-      const datasets = await measureTime("Dataset fetching", () =>
-        getAndCache(
-          "object-detection-datasets",
-          searchTopObjectDetectionTrainedDatasets,
-          60 * 60 * 24 * 30 // 30 days
-        )
-      );
-
-      const topDrawnClass = searchClasses
-        .sort((a, b) => b.drawCount - a.drawCount)
-        .map((cls) => cls.class)?.[0];
-
-      let semanticSearchModels: any[] = [];
-
-      if (topDrawnClass) {
-        const subjectToSemanticSearch = topDrawnClass
+      const semanticSearchTerm =
+        searchClasses
+          .sort((a, b) => b.drawCount - a.drawCount)
+          .map((cls) => cls.class)?.[0]
           ?.replaceAll("-", " ")
-          .replaceAll("_", " ");
+          ?.replaceAll("_", " ") ?? "";
 
-        console.log("🔍 Semantic search for:", subjectToSemanticSearch);
-
-        const semanticSearchResults = await measureTime("Semantic search", () =>
-          roboflowSearchDatasets({
-            prompt: subjectToSemanticSearch,
-            trainedVersion: true,
-            filter_nsfw: true,
-            "-forkedFrom": { exists: true },
-            images: {
-              gte: 25, // don't show empty datasets or very tiny datasets
-            },
-            public: true,
-            type: "object-detection",
-            fields: ["dataset_id"],
-            sort: [{ _score: "desc" }],
-            size: to ?? 100,
-            from: from ?? 0,
-          })
-        );
-
-        const semanticDatasetIds = semanticSearchResults.hits.map(
-          (hit: any) => hit._id
-        );
-
-        const completeSemanticSearchData = await measureTime(
-          "Complete semantic search data",
-          () => searchDatasetsByDatasetIds(semanticDatasetIds)
-        );
-
-        semanticSearchModels = completeSemanticSearchData.hits.hits.map(
-          (hit: any) => ({
-            ...hit,
-            semanticScore: semanticSearchResults.hits.find(
-              (s: any) => s._id === hit._id
-            )?._score,
-          })
-        );
-
-        // normalize semantic scores - they're between 0 and 1 but also usually lower, which ends
-        // up penalizing models that are semantically similar to the search query
-        semanticSearchModels = semanticSearchModels.map((model) => ({
-          ...model,
-          semanticScore: model.semanticScore,
-        }));
-
-        const normalizeFactor =
-          100 /
-          Math.max(...semanticSearchModels.map((model) => model.semanticScore));
-
-        semanticSearchModels = semanticSearchModels.map((model) => ({
-          ...model,
-          semanticScore: model.semanticScore * normalizeFactor,
-        }));
-      }
+      const metadataSimilaritySearchPromise = getMetadataSimilarityModels({
+        from: from ?? 0,
+        to: to ?? 100,
+        classes,
+      });
+      const semanticSearchPromise = getSemanticSearchModels({
+        term: semanticSearchTerm,
+        from: from ?? 0,
+        to: to ?? 100,
+      });
+      const imageSimilaritySearchPromise = getImageSimilarityModels({
+        image,
+        from: from ?? 0,
+        to: to ?? 100,
+      });
 
       // Apply pagination if from and to are provided
       const startIndex = from !== undefined ? from : 0;
       const endIndex = to !== undefined ? to : INFERENCES_PAGE_SIZE;
 
+      const [
+        semanticSearchModels,
+        imageSimilarityModels,
+        metadataSimilarityModels,
+      ] = await Promise.all([
+        semanticSearchPromise,
+        imageSimilaritySearchPromise,
+        metadataSimilaritySearchPromise,
+      ]);
+
       let suggestedModelHits: any[] = [];
 
       if (semanticSearchModels.length > 0) {
         suggestedModelHits = [
-          ...semanticSearchModels.slice(0, INFERENCES_PAGE_SIZE / 2),
-          ...datasets.hits.hits.slice(0, INFERENCES_PAGE_SIZE / 2),
+          ...semanticSearchModels.slice(
+            0,
+            Math.floor(INFERENCES_PAGE_SIZE / 3)
+          ),
+          ...imageSimilarityModels.slice(
+            0,
+            Math.floor(INFERENCES_PAGE_SIZE / 3)
+          ),
+          ...metadataSimilarityModels.slice(
+            0,
+            Math.floor(INFERENCES_PAGE_SIZE / 3)
+          ),
         ];
       } else {
-        suggestedModelHits = datasets.hits.hits.slice(0, INFERENCES_PAGE_SIZE);
+        suggestedModelHits = [
+          ...imageSimilarityModels.slice(
+            0,
+            Math.floor(INFERENCES_PAGE_SIZE / 2)
+          ),
+          ...metadataSimilarityModels.slice(
+            0,
+            Math.floor(INFERENCES_PAGE_SIZE / 2)
+          ),
+        ];
       }
 
       const models: ModelInfo[] = suggestedModelHits
