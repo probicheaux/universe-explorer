@@ -237,6 +237,9 @@ export default function UniverseExplorer() {
 
       let currentModels: ModelInfo[] = [];
       let pendingResults: { result: any; index: number }[] = [];
+      let resultsBuffer: Record<string, any> = {};
+      let lastUpdateTime = Date.now();
+      const UPDATE_INTERVAL = 100; // Update UI every 100ms
 
       const cleanup = api.inference.inferImage(base64Data, {
         onModels: (newModels: ModelInfo[], totalCount: number) => {
@@ -254,10 +257,7 @@ export default function UniverseExplorer() {
           pendingResults.forEach(({ result, index }) => {
             if (index < newModels.length) {
               const modelId = newModels[index].id;
-              setInferenceResults((prev) => ({
-                ...prev,
-                [modelId]: result,
-              }));
+              resultsBuffer[modelId] = result;
             }
           });
           pendingResults = [];
@@ -270,31 +270,34 @@ export default function UniverseExplorer() {
             } else {
               // Find the first model without results
               const modelIndex = currentModels.findIndex(
-                (m) => !inferenceResults[m.id]
+                (m) => !resultsBuffer[m.id]
               );
               if (modelIndex !== -1) {
                 const fallbackModelId = currentModels[modelIndex].id;
-                setInferenceResults((prev) => ({
-                  ...prev,
-                  [fallbackModelId]: result,
-                }));
+                resultsBuffer[fallbackModelId] = result;
                 setInferenceProgress((prev) => prev + 1);
                 setTotalInferences((prev) => prev + 1);
               }
             }
           } else {
-            setInferenceResults((prev) => ({
-              ...prev,
-              [modelId]: result,
-            }));
+            resultsBuffer[modelId] = result;
             setInferenceProgress((prev) => prev + 1);
             setTotalInferences((prev) => prev + 1);
+          }
+
+          // Batch UI updates
+          const now = Date.now();
+          if (now - lastUpdateTime >= UPDATE_INTERVAL) {
+            setInferenceResults((prev) => ({ ...prev, ...resultsBuffer }));
+            lastUpdateTime = now;
           }
         },
         onError: (modelId, error) => {
           console.error(`Error with model ${modelId}:`, error);
         },
         onComplete: () => {
+          // Final update of results
+          setInferenceResults((prev) => ({ ...prev, ...resultsBuffer }));
           setIsLoading(false);
         },
       });
@@ -346,7 +349,6 @@ export default function UniverseExplorer() {
 
     setIsEvaluatingMore(true);
     setIsLoading(true);
-    setInferenceProgress(0);
 
     try {
       const base64Data = image.includes(",") ? image.split(",")[1] : image;
@@ -357,6 +359,9 @@ export default function UniverseExplorer() {
 
       let currentModels: ModelInfo[] = [];
       let pendingResults: { result: any; index: number }[] = [];
+      let resultsBuffer: Record<string, any> = {};
+      let lastUpdateTime = Date.now();
+      const UPDATE_INTERVAL = 100; // Update UI every 100ms
 
       const cleanup = api.inference.inferImage(
         base64Data,
@@ -368,10 +373,6 @@ export default function UniverseExplorer() {
             from?: number,
             to?: number
           ) => {
-            console.log("totalInferences", totalInferences);
-            console.log("totalModels", totalModels);
-            console.log("from", from);
-            console.log("to", to);
             // Update pagination for next batch
             if (from !== undefined && to !== undefined) {
               setPagination({ from, to });
@@ -379,18 +380,13 @@ export default function UniverseExplorer() {
 
             // Append new models to existing ones
             currentModels = newModels;
-            setModels((prevModels) =>
-              Array.from(new Set([...prevModels, ...newModels]))
-            );
+            setModels((prevModels) => [...prevModels, ...newModels]);
 
             // Process any pending results
             pendingResults.forEach(({ result, index }) => {
               if (index < newModels.length) {
                 const modelId = newModels[index].id;
-                setInferenceResults((prev) => ({
-                  ...prev,
-                  [modelId]: result,
-                }));
+                resultsBuffer[modelId] = result;
               }
             });
             pendingResults = [];
@@ -403,31 +399,34 @@ export default function UniverseExplorer() {
               } else {
                 // Find the first model without results
                 const modelIndex = currentModels.findIndex(
-                  (m) => !inferenceResults[m.id]
+                  (m) => !resultsBuffer[m.id]
                 );
                 if (modelIndex !== -1) {
                   const fallbackModelId = currentModels[modelIndex].id;
-                  setInferenceResults((prev) => ({
-                    ...prev,
-                    [fallbackModelId]: result,
-                  }));
+                  resultsBuffer[fallbackModelId] = result;
                   setInferenceProgress((prev) => prev + 1);
                   setTotalInferences((prev) => prev + 1);
                 }
               }
             } else {
-              setInferenceResults((prev) => ({
-                ...prev,
-                [modelId]: result,
-              }));
+              resultsBuffer[modelId] = result;
               setInferenceProgress((prev) => prev + 1);
               setTotalInferences((prev) => prev + 1);
+            }
+
+            // Batch UI updates
+            const now = Date.now();
+            if (now - lastUpdateTime >= UPDATE_INTERVAL) {
+              setInferenceResults((prev) => ({ ...prev, ...resultsBuffer }));
+              lastUpdateTime = now;
             }
           },
           onError: (modelId, error) => {
             console.error(`Error with model ${modelId}:`, error);
           },
           onComplete: () => {
+            // Final update of results
+            setInferenceResults((prev) => ({ ...prev, ...resultsBuffer }));
             setIsLoading(false);
             setIsEvaluatingMore(false);
           },
