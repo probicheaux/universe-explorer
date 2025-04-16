@@ -21,6 +21,8 @@ interface ModelsToolbarProps {
   selectedModel?: string | undefined;
   autoSelectFirstModel?: boolean;
   classes: string[];
+  totalEvaluatedModels?: number;
+  onEvaluateMore?: () => void;
 }
 
 function calculateModelMatch(
@@ -374,6 +376,8 @@ function ModelsToolbar({
   selectedModel,
   autoSelectFirstModel = false,
   classes,
+  totalEvaluatedModels = 0,
+  onEvaluateMore,
 }: ModelsToolbarProps) {
   // Memoize the match calculations for each model
   const modelMatches = useMemo(() => {
@@ -469,9 +473,29 @@ function ModelsToolbar({
         )}
       </div>
       <div className="mt-4 pt-4 border-t border-gray-700">
-        <div className="flex items-center gap-2 text-xs text-gray-400">
-          <div className="w-2 h-2 rounded-full bg-green-500"></div>
-          <span>Models ready for inference</span>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <span>Models ready for inference</span>
+            </div>
+            <div className="text-xs text-gray-400">
+              {totalEvaluatedModels} evaluated models
+            </div>
+          </div>
+          {onEvaluateMore && (
+            <button
+              onClick={onEvaluateMore}
+              disabled={isLoading}
+              className={`mt-2 w-full py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                isLoading
+                  ? "bg-gray-800 text-gray-500 cursor-not-allowed"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
+            >
+              {isLoading ? "Evaluating..." : "Evaluate More Models"}
+            </button>
+          )}
         </div>
       </div>
     </div>

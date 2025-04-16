@@ -42,12 +42,13 @@ export default function UniverseExplorer() {
   const [scale, setScale] = useState({ x: 1, y: 1 });
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [models, setModels] = useState<ModelInfo[]>([]);
-  const cleanupRef = useRef<(() => void) | null>(null);
   const [inferenceProgress, setInferenceProgress] = useState(0);
+  const [isEvaluatingMore, setIsEvaluatingMore] = useState(false);
   const [pagination, setPagination] = useState({
     from: 0,
     to: 0,
   });
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   // Generate colors for all classes
   const classColors = useMemo(() => {
@@ -336,6 +337,87 @@ export default function UniverseExplorer() {
     setTaskType(newTaskType);
   };
 
+  const handleEvaluateMore = async (): Promise<void> => {
+    if (!image || isLoading || isEvaluatingMore) return;
+
+    setIsEvaluatingMore(true);
+    setIsLoading(true);
+
+    try {
+      const base64Data = image.includes(",") ? image.split(",")[1] : image;
+
+      if (cleanupRef.current) {
+        cleanupRef.current();
+      }
+
+      let currentModels: ModelInfo[] = [];
+      let pendingResults: { result: any; index: number }[] = [];
+
+      const cleanup = api.inference.inferImage(base64Data, {
+        onModels: (newModels: ModelInfo[], totalCount: number) => {
+          // Update pagination for next batch
+          setPagination({ from: pagination.to, to: totalCount });
+
+          // Append new models to existing ones
+          currentModels = newModels;
+          setModels((prevModels) => [...prevModels, ...newModels]);
+
+          // Process any pending results
+          pendingResults.forEach(({ result, index }) => {
+            if (index < newModels.length) {
+              const modelId = newModels[index].id;
+              setInferenceResults((prev) => ({
+                ...prev,
+                [modelId]: result,
+              }));
+            }
+          });
+          pendingResults = [];
+        },
+        onInference: (modelId, result) => {
+          if (!modelId) {
+            // Store the result temporarily if we don't have models yet
+            if (currentModels.length === 0) {
+              pendingResults.push({ result, index: pendingResults.length });
+            } else {
+              // Find the first model without results
+              const modelIndex = currentModels.findIndex(
+                (m) => !inferenceResults[m.id]
+              );
+              if (modelIndex !== -1) {
+                const fallbackModelId = currentModels[modelIndex].id;
+                setInferenceResults((prev) => ({
+                  ...prev,
+                  [fallbackModelId]: result,
+                }));
+                setInferenceProgress((prev) => prev + 1);
+              }
+            }
+          } else {
+            setInferenceResults((prev) => ({
+              ...prev,
+              [modelId]: result,
+            }));
+            setInferenceProgress((prev) => prev + 1);
+          }
+        },
+        onError: (modelId, error) => {
+          console.error(`Error with model ${modelId}:`, error);
+        },
+        onComplete: () => {
+          setIsLoading(false);
+          setIsEvaluatingMore(false);
+        },
+      });
+
+      cleanupRef.current = cleanup;
+    } catch (error) {
+      console.error("Error evaluating more models:", error);
+      setIsLoading(false);
+      setIsEvaluatingMore(false);
+    }
+  };
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -410,6 +492,8 @@ export default function UniverseExplorer() {
                 selectedModel={selectedModel ?? undefined}
                 autoSelectFirstModel={!userSelectedModel}
                 classes={classes}
+                totalEvaluatedModels={inferenceProgress}
+                onEvaluateMore={handleEvaluateMore}
               />
             )}
           </div>
