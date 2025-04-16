@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
       );
 
       // Process inferences in batches with controlled concurrency
-      const BATCH_SIZE = 50; // Process 50 models at a time
+      const BATCH_SIZE = 500;
 
       await async.eachLimit(topModels, BATCH_SIZE, async (model: ModelInfo) => {
         try {
