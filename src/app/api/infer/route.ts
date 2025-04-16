@@ -5,7 +5,11 @@ import {
 } from "@/adapters/elasticAdapter";
 import { getAndCache } from "@/utils/cache";
 import { inferImage } from "@/adapters/roboflowAdapter";
-import { InferenceOptions, ModelInfo } from "@/utils/api/inference";
+import {
+  InferenceOptions,
+  INFERENCES_PAGE_SIZE,
+  ModelInfo,
+} from "@/utils/api/inference";
 import { calculateMetadataScore } from "@/utils/modelCandidatesHeuristic";
 import { roboflowSearchDatasets } from "@/adapters/roboflowSearchAdapter";
 import { parseRoboflowSearchModelHit } from "@/utils/roboflowSearchParsing";
@@ -154,12 +158,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Models size limit
-      const MODELS_LIMIT = 10;
-
       // Apply pagination if from and to are provided
       const startIndex = from !== undefined ? from : 0;
-      const endIndex = to !== undefined ? to : MODELS_LIMIT;
+      const endIndex = to !== undefined ? to : INFERENCES_PAGE_SIZE;
 
       const modelProcessingStart = Date.now();
       const goodModels: ModelInfo[] = datasets.hits.hits
@@ -208,8 +209,8 @@ export async function POST(request: NextRequest) {
       // Mix between good models and semantic search models
       if (semanticSearchModels.length > 0) {
         models = [
-          ...semanticSearchModels.slice(0, MODELS_LIMIT / 2),
-          ...goodModels.slice(0, MODELS_LIMIT / 2),
+          ...semanticSearchModels.slice(0, INFERENCES_PAGE_SIZE / 2),
+          ...goodModels.slice(0, INFERENCES_PAGE_SIZE / 2),
         ];
       } else {
         models = goodModels;

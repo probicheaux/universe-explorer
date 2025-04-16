@@ -219,3 +219,5 @@ export const inferImage = (
     controller.abort();
   };
 };
+
+export const INFERENCES_PAGE_SIZE = 100;

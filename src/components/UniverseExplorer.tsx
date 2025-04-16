@@ -12,7 +12,7 @@ import Tabs, { TabType } from "./Tabs";
 import LoadingIndicator from "./LoadingIndicator";
 import { getColorForLabel } from "../utils/colors";
 import api from "@/utils/api";
-import { ModelInfo } from "@/utils/api/inference";
+import { INFERENCES_PAGE_SIZE, ModelInfo } from "@/utils/api/inference";
 
 export default function UniverseExplorer() {
   const [image, setImage] = useState<string | undefined>(undefined);
@@ -316,7 +316,7 @@ export default function UniverseExplorer() {
             drawCount: boxes?.filter((box) => box.class === cls)?.length ?? 0,
           })),
           from: 0,
-          to: 100,
+          to: INFERENCES_PAGE_SIZE,
         }
       );
 
@@ -454,7 +454,7 @@ export default function UniverseExplorer() {
             drawCount: boxes?.filter((box) => box.class === cls)?.length ?? 0,
           })),
           from: pagination.to,
-          to: pagination.to + 100, // Request next 100 models
+          to: pagination.to + INFERENCES_PAGE_SIZE, // Request next models
         }
       );
 
