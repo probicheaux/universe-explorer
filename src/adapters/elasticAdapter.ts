@@ -3,13 +3,15 @@ import { getEnv, getB64Env } from "../utils/environment";
 
 let CLIENT: Client | null = null;
 
-const FIELDS_TO_FETCH = [
+export const FIELDS_TO_FETCH = [
   "dataset_id",
   "annotation",
   "type",
   "name",
   "url",
   "icon",
+  "iconOwner",
+  "iconHasAnnotation",
   "images",
   "models",
   "universe",
