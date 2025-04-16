@@ -407,10 +407,14 @@ function ModelsToolbar({
     if (!imageDimensions) return models;
 
     // Filter out models with errors
-    const validModels = models.filter((model) => {
-      const result = results[model.id];
-      return result && !result.error;
-    });
+    const validModels = Array.from(
+      new Set(
+        models.filter((model) => {
+          const result = results[model.id];
+          return result && !result.error;
+        })
+      )
+    );
 
     return [...validModels].sort((a, b) => {
       const matchA = modelMatches[a.id] || 0;

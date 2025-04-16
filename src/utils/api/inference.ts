@@ -30,20 +30,38 @@ export interface ModelInfo {
 }
 
 export interface InferenceCallbacks {
-  onModels: (models: ModelInfo[], totalInferences: number) => void;
+  onModels: (
+    models: ModelInfo[],
+    totalInferences: number,
+    totalModels?: number,
+    from?: number,
+    to?: number
+  ) => void;
   onInference: (modelId: string | null, result: any) => void;
   onError: (modelId: string | null, error: any) => void;
   onComplete: () => void;
 }
 
+export interface InferenceOptions {
+  searchClasses?: string[];
+  from?: number;
+  to?: number;
+}
+
 export const inferImage = (
   image: string,
-  callbacks: InferenceCallbacks
+  callbacks: InferenceCallbacks,
+  options: InferenceOptions = {}
 ): (() => void) => {
   const base64Data = image.includes(",") ? image.split(",")[1] : image;
 
-  // Create POST request with the image data
-  const body = JSON.stringify({ image: base64Data });
+  // Create POST request with the image data and pagination parameters
+  const body = JSON.stringify({
+    image: base64Data,
+    searchClasses: options.searchClasses || [],
+    from: options.from,
+    to: options.to,
+  });
 
   // Create AbortController for cleanup
   const controller = new AbortController();
@@ -107,7 +125,10 @@ export const inferImage = (
                   case "models":
                     callbacks.onModels?.(
                       parsedData.models,
-                      parsedData.totalInferences
+                      parsedData.totalInferences,
+                      parsedData.totalModels,
+                      parsedData.from,
+                      parsedData.to
                     );
                     break;
                   case "inference":
@@ -152,7 +173,10 @@ export const inferImage = (
                 case "models":
                   callbacks.onModels?.(
                     parsedData.models,
-                    parsedData.totalInferences
+                    parsedData.totalInferences,
+                    parsedData.totalModels,
+                    parsedData.from,
+                    parsedData.to
                   );
                   break;
                 case "inference":

@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         return;
       }
 
-      const { image, searchClasses = [] } = body;
+      const { image, searchClasses = [], from, to } = body;
 
       if (!image) {
         await writer.write(
@@ -83,6 +83,14 @@ export async function POST(request: NextRequest) {
 
       // Get promising models
       const MODELS_LIMIT = 100;
+      const totalModels = datasets.hits.hits.length;
+
+      // Apply pagination if from and to are provided
+      const startIndex = from !== undefined ? from : 0;
+      const endIndex = to !== undefined ? to : MODELS_LIMIT;
+      console.log("startIndex", startIndex);
+      console.log("endIndex", endIndex);
+
       const bestModelCandidates = datasets.hits.hits
         .map((hit: any) => {
           // Calculate metadata score based on search classes
@@ -119,7 +127,7 @@ export async function POST(request: NextRequest) {
           (a: ModelInfo, b: ModelInfo) =>
             (b.metadataScore ?? 0) - (a.metadataScore ?? 0)
         )
-        .slice(0, MODELS_LIMIT);
+        .slice(startIndex, endIndex);
 
       // Send models data first
       await writer.write(
@@ -127,6 +135,9 @@ export async function POST(request: NextRequest) {
           createStreamMessage("models", {
             models: bestModelCandidates,
             totalInferences: bestModelCandidates.length,
+            totalModels: totalModels,
+            from: startIndex,
+            to: endIndex,
           })
         )
       );
