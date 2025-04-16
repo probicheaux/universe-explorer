@@ -44,7 +44,10 @@ export default function UniverseExplorer() {
   const [models, setModels] = useState<ModelInfo[]>([]);
   const cleanupRef = useRef<(() => void) | null>(null);
   const [inferenceProgress, setInferenceProgress] = useState(0);
-  const [totalInferences, setTotalInferences] = useState(0);
+  const [pagination, setPagination] = useState({
+    from: 0,
+    to: 0,
+  });
 
   // Generate colors for all classes
   const classColors = useMemo(() => {
@@ -220,7 +223,7 @@ export default function UniverseExplorer() {
     setSelectedModel(null);
     setUserSelectedModel(false);
     setInferenceProgress(0);
-    setTotalInferences(0);
+    setPagination({ from: 0, to: 0 });
 
     try {
       const base64Data = image.includes(",") ? image.split(",")[1] : image;
@@ -234,9 +237,10 @@ export default function UniverseExplorer() {
 
       const cleanup = api.inference.inferImage(base64Data, {
         onModels: (newModels: ModelInfo[], totalCount: number) => {
+          setPagination({ from: pagination.to, to: totalCount }); // Update pagination
+          console.log("Pagination:", pagination);
           currentModels = newModels;
           setModels(newModels);
-          setTotalInferences(totalCount);
           setActiveTab("results");
 
           if (newModels.length > 0) {
@@ -256,8 +260,6 @@ export default function UniverseExplorer() {
           pendingResults = [];
         },
         onInference: (modelId, result) => {
-          setInferenceProgress((prev) => prev + 1);
-
           if (!modelId) {
             // Store the result temporarily if we don't have models yet
             if (currentModels.length === 0) {
@@ -273,6 +275,7 @@ export default function UniverseExplorer() {
                   ...prev,
                   [fallbackModelId]: result,
                 }));
+                setInferenceProgress((prev) => prev + 1);
               }
             }
           } else {
@@ -280,11 +283,11 @@ export default function UniverseExplorer() {
               ...prev,
               [modelId]: result,
             }));
+            setInferenceProgress((prev) => prev + 1);
           }
         },
         onError: (modelId, error) => {
           console.error(`Error with model ${modelId}:`, error);
-          setInferenceProgress((prev) => prev + 1);
         },
         onComplete: () => {
           setIsLoading(false);
@@ -362,11 +365,7 @@ export default function UniverseExplorer() {
   return (
     <div className="flex flex-col h-full bg-gray-950 text-white relative">
       {/* Loading Indicator - positioned at the top of the container */}
-      <LoadingIndicator
-        isLoading={isLoading}
-        progress={inferenceProgress}
-        total={totalInferences}
-      />
+      <LoadingIndicator isLoading={isLoading} progress={inferenceProgress} />
 
       <div className="flex-1 flex overflow-hidden relative">
         {/* Toolbar - switches between Annotation and Models */}
@@ -410,6 +409,7 @@ export default function UniverseExplorer() {
                 offset={offset}
                 selectedModel={selectedModel ?? undefined}
                 autoSelectFirstModel={!userSelectedModel}
+                classes={classes}
               />
             )}
           </div>

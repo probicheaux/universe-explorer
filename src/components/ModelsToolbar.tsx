@@ -20,6 +20,7 @@ interface ModelsToolbarProps {
   offset: { x: number; y: number };
   selectedModel?: string | undefined;
   autoSelectFirstModel?: boolean;
+  classes: string[];
 }
 
 function calculateModelMatch(
@@ -28,13 +29,13 @@ function calculateModelMatch(
   drawnBoxes: any[],
   scale: { x: number; y: number },
   offset: { x: number; y: number },
-  searchClasses: string[] = []
+  classes: string[]
 ) {
   // Base score from bounding boxes overlap (0-100)
   const boxOverlap = calculateBoxOverlap(drawnBoxes, result, scale, offset);
 
   // If no search classes provided or no metadata score available, just return the box overlap
-  if (!searchClasses.length || !model.metadataScore) {
+  if (!classes.length || !model.metadataScore) {
     console.log(
       "no search classes or metadata score, returning only box overlap for match",
       boxOverlap
@@ -372,14 +373,8 @@ function ModelsToolbar({
   offset,
   selectedModel,
   autoSelectFirstModel = false,
+  classes,
 }: ModelsToolbarProps) {
-  // Extract classes from drawn boxes for semantic matching
-  const searchClasses = useMemo(() => {
-    return [...new Set(drawnBoxes.map((box) => box.class))];
-  }, [drawnBoxes]);
-
-  console.log("searchClasses", searchClasses);
-
   // Memoize the match calculations for each model
   const modelMatches = useMemo(() => {
     if (!imageDimensions) return {};
@@ -395,21 +390,13 @@ function ModelsToolbar({
           drawnBoxes,
           scale,
           offset,
-          searchClasses
+          classes
         );
       }
     });
 
     return matches;
-  }, [
-    models,
-    results,
-    drawnBoxes,
-    imageDimensions,
-    scale,
-    offset,
-    searchClasses,
-  ]);
+  }, [models, results, drawnBoxes, imageDimensions, scale, offset, classes]);
 
   // Filter out models with errors and calculate match percentages
   const sortedModels = useMemo(() => {

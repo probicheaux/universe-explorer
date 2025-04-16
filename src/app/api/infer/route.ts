@@ -91,8 +91,13 @@ export async function POST(request: NextRequest) {
             searchClasses
           );
 
+          const latestModel =
+            hit._source.models?.length && hit._source.models.length > 0
+              ? hit._source.models[hit._source.models.length - 1]
+              : hit._source.latestVersion;
+
           return {
-            id: `${hit._source.url}/${hit._source.latestVersion}`,
+            id: `${hit._source.url}/${latestModel}`,
             datasetId: hit._source.dataset_id,
             icon: hit._source.icon,
             images: hit._source.images,
@@ -100,10 +105,11 @@ export async function POST(request: NextRequest) {
             universeStats: hit._source.universeStats,
             classCounts: hit._source.class_counts,
             bestModelScore: hit._source.bestModelScore,
+            models: hit._source.models,
             type: hit._source.type,
             annotation: hit._source.annotation,
             url: hit._source.url,
-            version: hit._source.latestVersion,
+            version: latestModel,
             name: hit._source.name || "Unknown Model",
             description: hit._source.description || "",
             metadataScore: metadataScore,
