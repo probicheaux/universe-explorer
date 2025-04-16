@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import {
   searchTopObjectDetectionTrainedDatasets,
-  FIELDS_TO_FETCH,
+  searchDatasetsByDatasetIds,
 } from "@/adapters/elasticAdapter";
 import { getAndCache } from "@/utils/cache";
 import { inferImage } from "@/adapters/roboflowAdapter";
@@ -12,7 +12,6 @@ import {
 } from "@/utils/api/inference";
 import { calculateMetadataScore } from "@/utils/modelCandidatesHeuristic";
 import { roboflowSearchDatasets } from "@/adapters/roboflowSearchAdapter";
-import { parseRoboflowSearchModelHit } from "@/utils/roboflowSearchParsing";
 
 // Helper function to create a stream message
 function createStreamMessage(event: string, data: any) {
@@ -102,10 +101,6 @@ export async function POST(request: NextRequest) {
         return;
       }
 
-      console.log(
-        `📊 Processing request with ${searchClasses.length} search classes`
-      );
-
       // Get the dataset information
       const datasets = await measureTime("Dataset fetching", () =>
         getAndCache(
@@ -139,31 +134,64 @@ export async function POST(request: NextRequest) {
             },
             public: true,
             type: "object-detection",
-            fields: [
-              ...FIELDS_TO_FETCH,
-              "universe.tags",
-              "universe.stars",
-              "universeStats.totals",
-              "universeStats.totals.downloads",
-              "universeStats.totals.views",
-            ],
+            fields: ["dataset_id"],
             sort: [{ _score: "desc" }],
             size: to ?? 100,
             from: from ?? 0,
           })
         );
 
-        semanticSearchModels = semanticSearchResults.hits.map(
-          parseRoboflowSearchModelHit
+        const semanticDatasetIds = semanticSearchResults.hits.map(
+          (hit: any) => hit._id
         );
+
+        const completeSemanticSearchData = await measureTime(
+          "Complete semantic search data",
+          () => searchDatasetsByDatasetIds(semanticDatasetIds)
+        );
+
+        semanticSearchModels = completeSemanticSearchData.hits.hits.map(
+          (hit: any) => ({
+            ...hit,
+            semanticScore: semanticSearchResults.hits.find(
+              (s: any) => s._id === hit._id
+            )?._score,
+          })
+        );
+
+        // normalize semantic scores - they're between 0 and 1 but also usually lower, which ends
+        // up penalizing models that are semantically similar to the search query
+        semanticSearchModels = semanticSearchModels.map((model) => ({
+          ...model,
+          semanticScore: model.semanticScore,
+        }));
+
+        const normalizeFactor =
+          100 /
+          Math.max(...semanticSearchModels.map((model) => model.semanticScore));
+
+        semanticSearchModels = semanticSearchModels.map((model) => ({
+          ...model,
+          semanticScore: model.semanticScore * normalizeFactor,
+        }));
       }
 
       // Apply pagination if from and to are provided
       const startIndex = from !== undefined ? from : 0;
       const endIndex = to !== undefined ? to : INFERENCES_PAGE_SIZE;
 
-      const modelProcessingStart = Date.now();
-      const goodModels: ModelInfo[] = datasets.hits.hits
+      let suggestedModelHits: any[] = [];
+
+      if (semanticSearchModels.length > 0) {
+        suggestedModelHits = [
+          ...semanticSearchModels.slice(0, INFERENCES_PAGE_SIZE / 2),
+          ...datasets.hits.hits.slice(0, INFERENCES_PAGE_SIZE / 2),
+        ];
+      } else {
+        suggestedModelHits = datasets.hits.hits.slice(0, INFERENCES_PAGE_SIZE);
+      }
+
+      const models: ModelInfo[] = suggestedModelHits
         .map((hit: any) => {
           // Calculate metadata score based on search classes
           const metadataScore = calculateMetadataScore(hit._source, classes);
@@ -192,6 +220,7 @@ export async function POST(request: NextRequest) {
             name: hit._source.name || "Unknown Model",
             description: hit._source.description || "",
             metadataScore: metadataScore,
+            semanticScore: hit.semanticScore,
           } as ModelInfo;
         })
         .sort(
@@ -199,24 +228,6 @@ export async function POST(request: NextRequest) {
             (b.metadataScore ?? 0) - (a.metadataScore ?? 0)
         )
         .slice(startIndex, endIndex);
-
-      console.log(
-        `⏱️ Model processing: ${Date.now() - modelProcessingStart}ms`
-      );
-      console.log(`📊 Found ${goodModels.length} good models`);
-
-      let models: ModelInfo[] = [];
-      // Mix between good models and semantic search models
-      if (semanticSearchModels.length > 0) {
-        models = [
-          ...semanticSearchModels.slice(0, INFERENCES_PAGE_SIZE / 2),
-          ...goodModels.slice(0, INFERENCES_PAGE_SIZE / 2),
-        ];
-      } else {
-        models = goodModels;
-      }
-
-      console.log(`📊 Total models to process: ${models.length}`);
 
       // Send models data first
       await writer.write(
@@ -255,7 +266,10 @@ export async function POST(request: NextRequest) {
             encoder.encode(
               createStreamMessage("inference", {
                 modelId: model.id,
-                result,
+                result: {
+                  ...result,
+                  model_name: model.name,
+                },
               })
             )
           );

@@ -19,7 +19,7 @@ export default function FindModelButton({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       disabled={isLoading}
-      className="absolute bottom-4 right-4 z-20 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+      className="cursor-pointer absolute bottom-4 right-4 z-20 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {isLoading ? (
         <>

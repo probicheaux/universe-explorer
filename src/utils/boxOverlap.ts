@@ -119,20 +119,26 @@ function calculateBoxSimilarity(
   // Calculate size similarity (prefer boxes of similar size)
   const area1 = getBoxArea(box1);
   const area2 = getBoxArea(box2);
-  const areaRatio = Math.min(area1, area2) / Math.max(area1, area2);
+
+  // Calculate width and height similarity separately
+  const widthRatio =
+    Math.min(box1.width, box2.width) / Math.max(box1.width, box2.width);
+  const heightRatio =
+    Math.min(box1.height, box2.height) / Math.max(box1.height, box2.height);
+  const dimensionSimilarity = (widthRatio + heightRatio) / 2;
 
   // Calculate intersection over union
   const intersection = getIntersectionArea(box1, box2);
   const union = area1 + area2 - intersection;
   const iou = intersection / union;
 
-  // Combine all factors with weights
-  // Position is most important, then IOU, then aspect ratio, then size
+  // Combine all factors with adjusted weights
+  // Give more weight to dimensional similarity and IoU
   return (
-    positionSimilarity * 0.4 +
-    iou * 0.4 +
-    aspectRatioSimilarity * 0.15 +
-    areaRatio * 0.05
+    positionSimilarity * 0.2 + // Position matters less
+    iou * 0.3 + // IoU is still important
+    aspectRatioSimilarity * 0.1 + // Shape similarity matters less
+    dimensionSimilarity * 0.4 // Dimensional similarity matters most
   );
 }
 
@@ -187,9 +193,11 @@ export function calculateBoxOverlap(
 
   // For each drawn box, find the best matching model box
   const matchScores: number[] = [];
+  const matchDetails: { drawnBox: Box; bestMatch: Box; score: number }[] = [];
 
   for (const drawnBox of convertedDrawnBoxes) {
     let bestMatchScore = 0;
+    let bestMatchBox: Box | null = null;
 
     for (const modelBox of modelBoxes) {
       const similarity = calculateBoxSimilarity(
@@ -199,14 +207,28 @@ export function calculateBoxOverlap(
         imageHeight
       );
 
-      bestMatchScore = Math.max(bestMatchScore, similarity);
+      if (similarity > bestMatchScore) {
+        bestMatchScore = similarity;
+        bestMatchBox = modelBox;
+      }
     }
 
     matchScores.push(bestMatchScore);
+
+    if (bestMatchBox) {
+      matchDetails.push({
+        drawnBox,
+        bestMatch: bestMatchBox,
+        score: bestMatchScore,
+      });
+    }
   }
 
   // Calculate the average match score and convert to percentage
   const averageMatchScore =
     matchScores.reduce((sum, score) => sum + score, 0) / matchScores.length;
-  return Math.round(averageMatchScore * 100);
+
+  const finalScore = Math.round(averageMatchScore * 100);
+
+  return finalScore;
 }

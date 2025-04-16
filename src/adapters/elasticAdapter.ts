@@ -97,6 +97,39 @@ export const searchDatasets = async ({
   return client.search(searchPayload);
 };
 
+export const searchDatasetsByDatasetIds = async (datasetIds: string[]) => {
+  // Validate input
+  if (!datasetIds || datasetIds.length === 0) {
+    console.warn(
+      "searchDatasetsByDatasetIds called with empty datasetIds array"
+    );
+    return { hits: { hits: [], total: { value: 0 } } };
+  }
+
+  // Filter out any empty or invalid IDs
+  const validDatasetIds = datasetIds.filter(
+    (id) => id && typeof id === "string" && id.trim() !== ""
+  );
+
+  if (validDatasetIds.length === 0) {
+    console.warn("No valid dataset IDs provided to searchDatasetsByDatasetIds");
+    return { hits: { hits: [], total: { value: 0 } } };
+  }
+
+  const query = {
+    bool: {
+      must: [{ terms: { dataset_id: validDatasetIds } }],
+    },
+  };
+
+  return searchDatasets({
+    query,
+    size: 10000,
+    fields: FIELDS_TO_FETCH,
+    sort: DEFAULT_SORT,
+  });
+};
+
 export const searchTopObjectDetectionTrainedDatasets = async () => {
   const query = {
     bool: {

@@ -540,7 +540,6 @@ export default function UniverseExplorer() {
                 offset={offset}
                 selectedModel={selectedModel ?? undefined}
                 autoSelectFirstModel={!userSelectedModel}
-                classes={classes}
                 totalEvaluatedModels={totalInferences}
                 onEvaluateMore={handleEvaluateMore}
                 confidenceThreshold={confidenceThreshold}

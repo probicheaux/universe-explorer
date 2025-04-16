@@ -24,6 +24,7 @@ export type InferImageResponse = {
   };
   predictions: BoundingBoxPrediction[];
   error?: string;
+  model_name?: string;
 };
 
 // Helper function to delay execution

@@ -53,8 +53,6 @@ export const inferImage = (
 ): (() => void) => {
   const base64Data = image.includes(",") ? image.split(",")[1] : image;
 
-  console.log("inferImage options", JSON.stringify(options, null, 2));
-
   // Create POST request with the image data and pagination parameters
   const body = JSON.stringify({
     image: base64Data,

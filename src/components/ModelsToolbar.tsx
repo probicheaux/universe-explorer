@@ -20,47 +20,9 @@ interface ModelsToolbarProps {
   offset: { x: number; y: number };
   selectedModel?: string | undefined;
   autoSelectFirstModel?: boolean;
-  classes: string[];
   totalEvaluatedModels?: number;
   onEvaluateMore?: () => void;
   confidenceThreshold?: number;
-}
-
-function calculateModelMatch(
-  model: ModelInfo,
-  result: InferImageResponse,
-  drawnBoxes: any[],
-  scale: { x: number; y: number },
-  offset: { x: number; y: number },
-  confidenceThreshold: number = 0.5
-) {
-  // Filter predictions based on confidence threshold
-  const filteredResult = {
-    ...result,
-    predictions: result.predictions.filter(
-      (pred) => pred.confidence >= confidenceThreshold
-    ),
-  };
-
-  // Base score from bounding boxes overlap (0-100)
-  const predictionsScore = calculateBoxOverlap(
-    drawnBoxes,
-    filteredResult,
-    scale,
-    offset
-  );
-  const metadataScore = model.metadataScore;
-  const semanticScore = model.semanticScore;
-
-  if (metadataScore && semanticScore) {
-    return predictionsScore * 0.45 + semanticScore * 0.45 + metadataScore * 0.1;
-  } else if (!semanticScore && metadataScore) {
-    return predictionsScore * 0.9 + metadataScore * 0.1;
-  } else if (semanticScore && !metadataScore) {
-    return predictionsScore * 0.45 + semanticScore * 0.45;
-  } else {
-    return predictionsScore;
-  }
 }
 
 // Memoize the individual model card to prevent unnecessary re-renders
@@ -386,11 +348,65 @@ function ModelsToolbar({
   offset,
   selectedModel,
   autoSelectFirstModel = false,
-  classes,
   totalEvaluatedModels = 0,
   onEvaluateMore,
   confidenceThreshold = 0.5,
 }: ModelsToolbarProps) {
+  // Move calculateModelMatch inside component to access memoized values
+  const calculateModelMatch = useCallback(
+    (
+      model: ModelInfo,
+      result: InferImageResponse,
+      drawnBoxes: any[],
+      scale: { x: number; y: number },
+      offset: { x: number; y: number },
+      confidenceThreshold: number = 0.5
+    ) => {
+      // Filter predictions based on confidence threshold
+      const filteredResult = {
+        ...result,
+        predictions: result.predictions.filter(
+          (pred) => pred.confidence >= confidenceThreshold
+        ),
+      };
+
+      // Base score from bounding boxes overlap (0-100)
+      const predictionsScore = calculateBoxOverlap(
+        drawnBoxes,
+        filteredResult,
+        scale,
+        offset
+      );
+      const metadataScore = model.metadataScore;
+      const semanticScore = model.semanticScore;
+
+      if (
+        ["COCO Dataset", "Dogcolor", "DOG", "Fall Detection"].includes(
+          model.name
+        )
+      ) {
+        console.log(
+          `predictionsScore, metadataScore, semanticScore for ${model.name}`,
+          predictionsScore,
+          metadataScore,
+          semanticScore
+        );
+      }
+      if (metadataScore && semanticScore) {
+        return (
+          predictionsScore * 0.65 + semanticScore * 0.25 + metadataScore * 0.1
+        );
+      } else if (!semanticScore && metadataScore) {
+        return predictionsScore * 0.7 + metadataScore * 0.3;
+      } else if (semanticScore && !metadataScore) {
+        return predictionsScore * 0.7 + semanticScore * 0.3;
+      } else {
+        return predictionsScore;
+      }
+    },
+    [drawnBoxes, scale, offset]
+  );
+
   // Memoize the match calculations for each model
   const modelMatches = useMemo(() => {
     if (!imageDimensions) return {};
@@ -415,11 +431,8 @@ function ModelsToolbar({
   }, [
     models,
     results,
-    drawnBoxes,
     imageDimensions,
-    scale,
-    offset,
-    classes,
+    calculateModelMatch,
     confidenceThreshold,
   ]);
 
@@ -427,15 +440,16 @@ function ModelsToolbar({
   const sortedModels = useMemo(() => {
     if (!imageDimensions) return models;
 
-    // Filter out models with errors
-    const validModels = Array.from(
-      new Set(
-        models.filter((model) => {
-          const result = results[model.id];
-          return result && !result.error;
-        })
-      )
+    const validModelIds = new Set(
+      models
+        .map((model) => model.id)
+        .filter((id) => results[id] && !results[id].error)
     );
+
+    // Filter out models with errors
+    const validModels = Array.from(validModelIds)
+      .map((id) => models.find((model) => model.id === id))
+      .filter(Boolean) as ModelInfo[];
 
     return [...validModels].sort((a, b) => {
       const matchA = modelMatches[a.id] || 0;
