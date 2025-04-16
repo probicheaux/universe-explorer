@@ -27,14 +27,26 @@ function calculateModelMatch(
   result: InferImageResponse,
   drawnBoxes: any[],
   scale: { x: number; y: number },
-  offset: { x: number; y: number }
+  offset: { x: number; y: number },
+  searchClasses: string[] = []
 ) {
-  // bounding boxes overlap
+  // Base score from bounding boxes overlap (0-100)
   const boxOverlap = calculateBoxOverlap(drawnBoxes, result, scale, offset);
 
-  // add more methods here to compound on the matching score later
+  // If no search classes provided or no metadata score available, just return the box overlap
+  if (!searchClasses.length || !model.metadataScore) {
+    console.log(
+      "no search classes or metadata score, returning only box overlap for match",
+      boxOverlap
+    );
+    return boxOverlap;
+  }
 
-  return boxOverlap;
+  // Use the pre-calculated metadata score from the backend
+  // Weight: 70% box overlap, 30% metadata match
+  const combinedScore = boxOverlap * 0.7 + model.metadataScore * 0.3;
+
+  return combinedScore;
 }
 
 // Memoize the individual model card to prevent unnecessary re-renders
@@ -361,6 +373,13 @@ function ModelsToolbar({
   selectedModel,
   autoSelectFirstModel = false,
 }: ModelsToolbarProps) {
+  // Extract classes from drawn boxes for semantic matching
+  const searchClasses = useMemo(() => {
+    return [...new Set(drawnBoxes.map((box) => box.class))];
+  }, [drawnBoxes]);
+
+  console.log("searchClasses", searchClasses);
+
   // Memoize the match calculations for each model
   const modelMatches = useMemo(() => {
     if (!imageDimensions) return {};
@@ -375,13 +394,22 @@ function ModelsToolbar({
           result,
           drawnBoxes,
           scale,
-          offset
+          offset,
+          searchClasses
         );
       }
     });
 
     return matches;
-  }, [models, results, drawnBoxes, imageDimensions, scale, offset]);
+  }, [
+    models,
+    results,
+    drawnBoxes,
+    imageDimensions,
+    scale,
+    offset,
+    searchClasses,
+  ]);
 
   // Filter out models with errors and calculate match percentages
   const sortedModels = useMemo(() => {

@@ -26,6 +26,7 @@ export interface ModelInfo {
   annotation?: string;
   url?: string;
   version?: number;
+  metadataScore?: number;
 }
 
 export interface InferenceCallbacks {

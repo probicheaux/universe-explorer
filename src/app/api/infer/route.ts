@@ -3,6 +3,7 @@ import { searchTopObjectDetectionTrainedDatasets } from "@/adapters/elasticAdapt
 import { getAndCache } from "@/utils/cache";
 import { inferImage } from "@/adapters/roboflowAdapter";
 import { ModelInfo } from "@/utils/api/inference";
+import { calculateMetadataScore } from "@/utils/modelCandidatesHeuristic";
 
 // Helper function to create a stream message
 function createStreamMessage(event: string, data: any) {
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
         return;
       }
 
-      const { image } = body;
+      const { image, searchClasses = [] } = body;
 
       if (!image) {
         await writer.write(
@@ -80,33 +81,46 @@ export async function POST(request: NextRequest) {
         60 * 60 * 24 * 30 // 30 days
       );
 
-      // Get top models
-      const MODELS_LIMIT = 1000;
-      const topModels = datasets.hits.hits
-        .slice(0, MODELS_LIMIT)
-        .map((hit: any) => ({
-          id: `${hit._source.url}/${hit._source.latestVersion}`,
-          datasetId: hit._source.dataset_id,
-          icon: hit._source.icon,
-          images: hit._source.images,
-          universe: hit._source.universe,
-          universeStats: hit._source.universeStats,
-          classCounts: hit._source.class_counts,
-          bestModelScore: hit._source.bestModelScore,
-          type: hit._source.type,
-          annotation: hit._source.annotation,
-          url: hit._source.url,
-          version: hit._source.latestVersion,
-          name: hit._source.name || "Unknown Model",
-          description: hit._source.description || "",
-        }));
+      // Get promising models
+      const MODELS_LIMIT = 100;
+      const bestModelCandidates = datasets.hits.hits
+        .map((hit: any) => {
+          // Calculate metadata score based on search classes
+          const metadataScore = calculateMetadataScore(
+            hit._source,
+            searchClasses
+          );
+
+          return {
+            id: `${hit._source.url}/${hit._source.latestVersion}`,
+            datasetId: hit._source.dataset_id,
+            icon: hit._source.icon,
+            images: hit._source.images,
+            universe: hit._source.universe,
+            universeStats: hit._source.universeStats,
+            classCounts: hit._source.class_counts,
+            bestModelScore: hit._source.bestModelScore,
+            type: hit._source.type,
+            annotation: hit._source.annotation,
+            url: hit._source.url,
+            version: hit._source.latestVersion,
+            name: hit._source.name || "Unknown Model",
+            description: hit._source.description || "",
+            metadataScore: metadataScore,
+          };
+        })
+        .sort(
+          (a: ModelInfo, b: ModelInfo) =>
+            (b.metadataScore ?? 0) - (a.metadataScore ?? 0)
+        )
+        .slice(0, MODELS_LIMIT);
 
       // Send models data first
       await writer.write(
         encoder.encode(
           createStreamMessage("models", {
-            models: topModels,
-            totalInferences: topModels.length,
+            models: bestModelCandidates,
+            totalInferences: bestModelCandidates.length,
           })
         )
       );
@@ -144,7 +158,7 @@ export async function POST(request: NextRequest) {
         }
       };
 
-      await Promise.all(topModels.map(processModel));
+      await Promise.all(bestModelCandidates.map(processModel));
 
       // Send completion message
       await writer.write(
