@@ -5,11 +5,7 @@ import axios from "axios";
 
 async function getToken() {
   try {
-    const token = await getSearchBackendAuthToken();
-
-    console.log("[Roboflow Search Auth] token", token);
-
-    return token;
+    return await getSearchBackendAuthToken();
   } catch (error) {
     console.error(
       "[Roboflow Search Auth] error getting search backend auth token",
