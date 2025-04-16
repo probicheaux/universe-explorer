@@ -15,11 +15,24 @@ function createStreamMessage(event: string, data: any) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
+// Helper function to measure time
+function measureTime(label: string, fn: () => Promise<any>): Promise<any> {
+  const start = Date.now();
+  return fn().then((result) => {
+    const end = Date.now();
+    console.log(`⏱️ ${label}: ${end - start}ms`);
+    return result;
+  });
+}
+
 interface InferRequestBody extends InferenceOptions {
   image: string;
 }
 
 export async function POST(request: NextRequest) {
+  const totalStartTime = Date.now();
+  console.log("🚀 Starting inference request processing");
+
   // Create a TransformStream for SSE
   const stream = new TransformStream();
   const writer = stream.writable.getWriter();
@@ -85,11 +98,17 @@ export async function POST(request: NextRequest) {
         return;
       }
 
+      console.log(
+        `📊 Processing request with ${searchClasses.length} search classes`
+      );
+
       // Get the dataset information
-      const datasets = await getAndCache(
-        "object-detection-datasets",
-        searchTopObjectDetectionTrainedDatasets,
-        60 * 60 * 24 * 30 // 30 days
+      const datasets = await measureTime("Dataset fetching", () =>
+        getAndCache(
+          "object-detection-datasets",
+          searchTopObjectDetectionTrainedDatasets,
+          60 * 60 * 24 * 30 // 30 days
+        )
       );
 
       const topDrawnClass = searchClasses
@@ -103,30 +122,32 @@ export async function POST(request: NextRequest) {
           ?.replaceAll("-", " ")
           .replaceAll("_", " ");
 
-        console.log("subjectToSemanticSearch", subjectToSemanticSearch);
+        console.log("🔍 Semantic search for:", subjectToSemanticSearch);
 
-        const semanticSearchResults = await roboflowSearchDatasets({
-          prompt: subjectToSemanticSearch,
-          trainedVersion: true,
-          filter_nsfw: true,
-          "-forkedFrom": { exists: true },
-          images: {
-            gte: 25, // don't show empty datasets or very tiny datasets
-          },
-          public: true,
-          type: "object-detection",
-          fields: [
-            ...FIELDS_TO_FETCH,
-            "universe.tags",
-            "universe.stars",
-            "universeStats.totals",
-            "universeStats.totals.downloads",
-            "universeStats.totals.views",
-          ],
-          sort: [{ _score: "desc" }],
-          size: to ?? 100,
-          from: from ?? 0,
-        });
+        const semanticSearchResults = await measureTime("Semantic search", () =>
+          roboflowSearchDatasets({
+            prompt: subjectToSemanticSearch,
+            trainedVersion: true,
+            filter_nsfw: true,
+            "-forkedFrom": { exists: true },
+            images: {
+              gte: 25, // don't show empty datasets or very tiny datasets
+            },
+            public: true,
+            type: "object-detection",
+            fields: [
+              ...FIELDS_TO_FETCH,
+              "universe.tags",
+              "universe.stars",
+              "universeStats.totals",
+              "universeStats.totals.downloads",
+              "universeStats.totals.views",
+            ],
+            sort: [{ _score: "desc" }],
+            size: to ?? 100,
+            from: from ?? 0,
+          })
+        );
 
         semanticSearchModels = semanticSearchResults.hits.map(
           parseRoboflowSearchModelHit
@@ -134,12 +155,13 @@ export async function POST(request: NextRequest) {
       }
 
       // Models size limit
-      const MODELS_LIMIT = 100;
+      const MODELS_LIMIT = 10;
 
       // Apply pagination if from and to are provided
       const startIndex = from !== undefined ? from : 0;
       const endIndex = to !== undefined ? to : MODELS_LIMIT;
 
+      const modelProcessingStart = Date.now();
       const goodModels: ModelInfo[] = datasets.hits.hits
         .map((hit: any) => {
           // Calculate metadata score based on search classes
@@ -177,6 +199,11 @@ export async function POST(request: NextRequest) {
         )
         .slice(startIndex, endIndex);
 
+      console.log(
+        `⏱️ Model processing: ${Date.now() - modelProcessingStart}ms`
+      );
+      console.log(`📊 Found ${goodModels.length} good models`);
+
       let models: ModelInfo[] = [];
       // Mix between good models and semantic search models
       if (semanticSearchModels.length > 0) {
@@ -187,6 +214,8 @@ export async function POST(request: NextRequest) {
       } else {
         models = goodModels;
       }
+
+      console.log(`📊 Total models to process: ${models.length}`);
 
       // Send models data first
       await writer.write(
@@ -200,10 +229,25 @@ export async function POST(request: NextRequest) {
       );
 
       // Create a map to track all inference requests
-      const inferencePromises = models.map(async (model) => {
+      const inferenceStartTime = Date.now();
+      console.log("🤖 Starting inference on models");
+
+      const inferencePromises = models.map(async (model, index) => {
+        const modelStartTime = Date.now();
         try {
           const modelUrl = `${model.url}/${model.version}`;
+          console.log(
+            `🔄 Processing model ${index + 1}/${models.length}: ${model.name}`
+          );
+
           const result = await inferImage(modelUrl, image);
+
+          const modelEndTime = Date.now();
+          console.log(
+            `✅ Model ${index + 1}/${models.length} completed in ${
+              modelEndTime - modelStartTime
+            }ms`
+          );
 
           // Send each inference result as it completes
           await writer.write(
@@ -217,7 +261,13 @@ export async function POST(request: NextRequest) {
 
           return { modelId: model.id, success: true, result };
         } catch (error) {
-          console.error(`Error inferring with model ${model.id}:`, error);
+          const modelEndTime = Date.now();
+          console.error(
+            `❌ Error inferring with model ${index + 1}/${models.length} (${
+              model.name
+            }) in ${modelEndTime - modelStartTime}ms:`,
+            error
+          );
 
           // Send error for this specific model
           await writer.write(
@@ -236,12 +286,22 @@ export async function POST(request: NextRequest) {
       // Wait for all inferences to complete
       await Promise.all(inferencePromises);
 
+      const inferenceEndTime = Date.now();
+      console.log(
+        `⏱️ Total inference time: ${inferenceEndTime - inferenceStartTime}ms`
+      );
+
       // Send completion message
       await writer.write(
         encoder.encode(createStreamMessage("complete", { status: "done" }))
       );
+
+      const totalEndTime = Date.now();
+      console.log(
+        `🏁 Total request processing time: ${totalEndTime - totalStartTime}ms`
+      );
     } catch (error) {
-      console.error("Error processing inference request:", error);
+      console.error("❌ Error processing inference request:", error);
       await writer.write(
         encoder.encode(
           createStreamMessage("error", {
