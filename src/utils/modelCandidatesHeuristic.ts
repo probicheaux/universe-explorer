@@ -79,7 +79,7 @@ export function calculateMetadataScore(
         }
 
         // Add to metadata score with high weight (0.7)
-        metadataScore += normalizedScore * 0.7 * classWeight;
+        metadataScore += normalizedScore * 0.8 * classWeight;
       }
     }
   }
@@ -102,7 +102,7 @@ export function calculateMetadataScore(
         const normalizedScore = Math.max(0, 100 - matchScore * 100);
 
         // Add to metadata score with medium weight (0.3)
-        metadataScore += normalizedScore * 0.3;
+        metadataScore += normalizedScore * 0.1;
       }
     }
   }
@@ -125,7 +125,7 @@ export function calculateMetadataScore(
         const normalizedScore = Math.max(0, 100 - matchScore * 100);
 
         // Add to metadata score with lower weight (0.2)
-        metadataScore += normalizedScore * 0.2;
+        metadataScore += normalizedScore * 0.1;
       }
     }
   }
