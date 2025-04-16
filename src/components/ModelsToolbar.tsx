@@ -22,20 +22,35 @@ interface ModelsToolbarProps {
   autoSelectFirstModel?: boolean;
 }
 
+function calculateModelMatch(
+  model: ModelInfo,
+  result: InferImageResponse,
+  drawnBoxes: any[],
+  scale: { x: number; y: number },
+  offset: { x: number; y: number }
+) {
+  // bounding boxes overlap
+  const boxOverlap = calculateBoxOverlap(drawnBoxes, result, scale, offset);
+
+  // add more methods here to compound on the matching score later
+
+  return boxOverlap;
+}
+
 // Memoize the individual model card to prevent unnecessary re-renders
 const ModelCard = React.memo(
   ({
     model,
     result,
     onSelect,
-    boxOverlap,
+    match,
     isSelected,
     isBestMatch,
   }: {
     model: ModelInfo;
     result: InferImageResponse | undefined;
     onSelect: (modelId: string) => void;
-    boxOverlap: number;
+    match: number;
     isSelected?: boolean;
     isBestMatch?: boolean;
   }) => {
@@ -255,7 +270,7 @@ const ModelCard = React.memo(
                 </div>
               </div>
               <div className="text-xs font-medium px-2 py-0.5 rounded bg-blue-900/50 text-blue-400 whitespace-nowrap w-fit">
-                {boxOverlap.toFixed(1)}% match
+                {match.toFixed(1)}% match
               </div>
             </div>
           )}
@@ -270,7 +285,7 @@ const ModelCard = React.memo(
       prevProps.model.id === nextProps.model.id &&
       prevProps.isSelected === nextProps.isSelected &&
       prevProps.isBestMatch === nextProps.isBestMatch &&
-      prevProps.boxOverlap === nextProps.boxOverlap &&
+      prevProps.match === nextProps.match &&
       // Check if the result has changed
       (prevProps.result === nextProps.result ||
         (prevProps.result?.error === nextProps.result?.error &&
@@ -288,7 +303,7 @@ const ModelRow = React.memo(
   ({
     model,
     result,
-    boxOverlap,
+    match,
     isSelected,
     isBestMatch,
     onSelect,
@@ -296,7 +311,7 @@ const ModelRow = React.memo(
   }: {
     model: ModelInfo;
     result: InferImageResponse | undefined;
-    boxOverlap: number;
+    match: number;
     isSelected: boolean;
     isBestMatch: boolean;
     onSelect: (modelId: string) => void;
@@ -308,7 +323,7 @@ const ModelRow = React.memo(
           model={model}
           result={result}
           onSelect={onSelect}
-          boxOverlap={boxOverlap}
+          match={match}
           isSelected={isSelected}
           isBestMatch={isBestMatch}
         />
@@ -321,7 +336,7 @@ const ModelRow = React.memo(
       prevProps.model.id === nextProps.model.id &&
       prevProps.isSelected === nextProps.isSelected &&
       prevProps.isBestMatch === nextProps.isBestMatch &&
-      prevProps.boxOverlap === nextProps.boxOverlap &&
+      prevProps.match === nextProps.match &&
       // Check if the result has changed
       (prevProps.result === nextProps.result ||
         (prevProps.result?.error === nextProps.result?.error &&
@@ -346,25 +361,26 @@ function ModelsToolbar({
   selectedModel,
   autoSelectFirstModel = false,
 }: ModelsToolbarProps) {
-  // Memoize the box overlap calculations for each model
-  const modelOverlaps = useMemo(() => {
+  // Memoize the match calculations for each model
+  const modelMatches = useMemo(() => {
     if (!imageDimensions) return {};
 
-    const overlaps: Record<string, number> = {};
+    const matches: Record<string, number> = {};
 
     models.forEach((model) => {
       const result = results[model.id];
       if (result && !result.error) {
-        overlaps[model.id] = calculateBoxOverlap(
-          drawnBoxes,
+        matches[model.id] = calculateModelMatch(
+          model,
           result,
+          drawnBoxes,
           scale,
           offset
         );
       }
     });
 
-    return overlaps;
+    return matches;
   }, [models, results, drawnBoxes, imageDimensions, scale, offset]);
 
   // Filter out models with errors and calculate match percentages
@@ -378,11 +394,11 @@ function ModelsToolbar({
     });
 
     return [...validModels].sort((a, b) => {
-      const boxOverlapA = modelOverlaps[a.id] || 0;
-      const boxOverlapB = modelOverlaps[b.id] || 0;
-      return boxOverlapB - boxOverlapA; // Sort in descending order
+      const matchA = modelMatches[a.id] || 0;
+      const matchB = modelMatches[b.id] || 0;
+      return matchB - matchA; // Sort in descending order
     });
-  }, [models, results, imageDimensions, modelOverlaps]);
+  }, [models, results, imageDimensions, modelMatches]);
 
   // Select the first model by default when no model is selected
   useEffect(() => {
@@ -398,13 +414,13 @@ function ModelsToolbar({
       const modelResult = results[model.id];
       const isSelected = selectedModel === model.id;
       const isBestMatch = index === 0;
-      const boxOverlap = modelOverlaps[model.id] || 0;
+      const match = modelMatches[model.id] || 0;
 
       return (
         <ModelRow
           model={model}
           result={modelResult}
-          boxOverlap={boxOverlap}
+          match={match}
           isSelected={isSelected}
           isBestMatch={isBestMatch}
           onSelect={onModelSelect || (() => {})}
@@ -412,7 +428,7 @@ function ModelsToolbar({
         />
       );
     },
-    [sortedModels, results, onModelSelect, modelOverlaps, selectedModel]
+    [sortedModels, results, onModelSelect, modelMatches, selectedModel]
   );
 
   return (
