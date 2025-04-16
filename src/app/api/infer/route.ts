@@ -137,47 +137,42 @@ export async function POST(request: NextRequest) {
         )
       );
 
-      // Process models in parallel batches
-      const BATCH_SIZE = 20; // Process 20 models at a time
-      for (let i = 0; i < bestModelCandidates.length; i += BATCH_SIZE) {
-        const batch = bestModelCandidates.slice(i, i + BATCH_SIZE);
+      // Create a map to track all inference requests
+      const inferencePromises = bestModelCandidates.map(async (model) => {
+        try {
+          const modelUrl = `${model.url}/${model.version}`;
+          const result = await inferImage(modelUrl, image);
 
-        // Process each batch in parallel
-        await Promise.all(
-          batch.map(async (model) => {
-            try {
-              const modelUrl = `${model.url}/${model.version}`;
-              const result = await inferImage(modelUrl, image);
+          // Send each inference result as it completes
+          await writer.write(
+            encoder.encode(
+              createStreamMessage("inference", {
+                modelId: model.id,
+                result,
+              })
+            )
+          );
 
-              // Send each inference result as it completes
-              await writer.write(
-                encoder.encode(
-                  createStreamMessage("inference", {
-                    modelId: model.id,
-                    result,
-                  })
-                )
-              );
+          return { modelId: model.id, success: true, result };
+        } catch (error) {
+          console.error(`Error inferring with model ${model.id}:`, error);
 
-              return { modelId: model.id, success: true, result };
-            } catch (error) {
-              console.error(`Error inferring with model ${model.id}:`, error);
+          // Send error for this specific model
+          await writer.write(
+            encoder.encode(
+              createStreamMessage("error", {
+                modelId: model.id,
+                error: "Failed to process inference",
+              })
+            )
+          );
 
-              // Send error for this specific model
-              await writer.write(
-                encoder.encode(
-                  createStreamMessage("error", {
-                    modelId: model.id,
-                    error: "Failed to process inference",
-                  })
-                )
-              );
+          return { modelId: model.id, success: false, error };
+        }
+      });
 
-              return { modelId: model.id, success: false, error };
-            }
-          })
-        );
-      }
+      // Wait for all inferences to complete
+      await Promise.all(inferencePromises);
 
       // Send completion message
       await writer.write(

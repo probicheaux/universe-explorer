@@ -238,12 +238,21 @@ export default function UniverseExplorer() {
       let currentModels: ModelInfo[] = [];
       let pendingResults: { result: any; index: number }[] = [];
       let resultsBuffer: Record<string, any> = {};
-      let lastUpdateTime = Date.now();
-      const UPDATE_INTERVAL = 100; // Update UI every 100ms
+      const UPDATE_INTERVAL = 50; // Update UI every 50ms for faster feedback
+      let updateScheduled = false;
+
+      const scheduleUpdate = () => {
+        if (!updateScheduled) {
+          updateScheduled = true;
+          setTimeout(() => {
+            setInferenceResults((prev) => ({ ...prev, ...resultsBuffer }));
+            updateScheduled = false;
+          }, UPDATE_INTERVAL);
+        }
+      };
 
       const cleanup = api.inference.inferImage(base64Data, {
         onModels: (newModels: ModelInfo[], from?: number, to?: number) => {
-          // Update pagination using the 'to' parameter if available
           setPagination({ from: from ?? 0, to: to ?? newModels?.length ?? 0 });
           currentModels = newModels;
           setModels(newModels);
@@ -277,19 +286,14 @@ export default function UniverseExplorer() {
                 resultsBuffer[fallbackModelId] = result;
                 setInferenceProgress((prev) => prev + 1);
                 setTotalInferences((prev) => prev + 1);
+                scheduleUpdate();
               }
             }
           } else {
             resultsBuffer[modelId] = result;
             setInferenceProgress((prev) => prev + 1);
             setTotalInferences((prev) => prev + 1);
-          }
-
-          // Batch UI updates
-          const now = Date.now();
-          if (now - lastUpdateTime >= UPDATE_INTERVAL) {
-            setInferenceResults((prev) => ({ ...prev, ...resultsBuffer }));
-            lastUpdateTime = now;
+            scheduleUpdate();
           }
         },
         onError: (modelId, error) => {
@@ -360,8 +364,18 @@ export default function UniverseExplorer() {
       let currentModels: ModelInfo[] = [];
       let pendingResults: { result: any; index: number }[] = [];
       let resultsBuffer: Record<string, any> = {};
-      let lastUpdateTime = Date.now();
-      const UPDATE_INTERVAL = 100; // Update UI every 100ms
+      const UPDATE_INTERVAL = 50; // Update UI every 50ms for faster feedback
+      let updateScheduled = false;
+
+      const scheduleUpdate = () => {
+        if (!updateScheduled) {
+          updateScheduled = true;
+          setTimeout(() => {
+            setInferenceResults((prev) => ({ ...prev, ...resultsBuffer }));
+            updateScheduled = false;
+          }, UPDATE_INTERVAL);
+        }
+      };
 
       const cleanup = api.inference.inferImage(
         base64Data,
@@ -400,19 +414,14 @@ export default function UniverseExplorer() {
                   resultsBuffer[fallbackModelId] = result;
                   setInferenceProgress((prev) => prev + 1);
                   setTotalInferences((prev) => prev + 1);
+                  scheduleUpdate();
                 }
               }
             } else {
               resultsBuffer[modelId] = result;
               setInferenceProgress((prev) => prev + 1);
               setTotalInferences((prev) => prev + 1);
-            }
-
-            // Batch UI updates
-            const now = Date.now();
-            if (now - lastUpdateTime >= UPDATE_INTERVAL) {
-              setInferenceResults((prev) => ({ ...prev, ...resultsBuffer }));
-              lastUpdateTime = now;
+              scheduleUpdate();
             }
           },
           onError: (modelId, error) => {
