@@ -57,7 +57,8 @@ function getBoxArea(box: Box): number {
  * Calculate the match percentage between drawn boxes and model prediction boxes
  * @param drawnBoxes The boxes drawn by the user (in rendered image coordinates)
  * @param modelResult The inference result from a model (in original image coordinates)
- * @param imageDimensions The dimensions of the rendered image
+ * @param scale The scale of the rendered image
+ * @param offset The offset of the rendered image
  * @returns The match percentage (0-100)
  */
 export function calculateBoxOverlap(
@@ -104,7 +105,38 @@ export function calculateBoxOverlap(
     totalIntersectionArea += maxIntersection;
   }
 
-  // Calculate match percentage
-  const matchPercentage = (totalIntersectionArea / totalDrawnArea) * 100;
-  return Math.round(matchPercentage);
+  // Calculate base match percentage from area overlap
+  const baseMatchPercentage = (totalIntersectionArea / totalDrawnArea) * 100;
+
+  // Apply penalties based on box count difference
+  const boxCountDifference = Math.abs(
+    convertedDrawnBoxes.length - modelBoxes.length
+  );
+  const boxCountPenalty = Math.min(boxCountDifference * 10, 50); // Max 50% penalty
+
+  // Apply penalties based on size distribution
+  const drawnBoxSizes = convertedDrawnBoxes.map((box) => getBoxArea(box));
+  const modelBoxSizes = modelBoxes.map((box) => getBoxArea(box));
+
+  // Calculate average size difference
+  const avgDrawnSize =
+    drawnBoxSizes.reduce((sum, size) => sum + size, 0) / drawnBoxSizes.length;
+  const avgModelSize =
+    modelBoxSizes.reduce((sum, size) => sum + size, 0) / modelBoxSizes.length;
+
+  // Calculate size difference penalty (up to 30%)
+  const sizeDifferencePenalty = Math.min(
+    (Math.abs(avgDrawnSize - avgModelSize) /
+      Math.max(avgDrawnSize, avgModelSize)) *
+      30,
+    30
+  );
+
+  // Calculate final match percentage with penalties
+  const finalMatchPercentage = Math.max(
+    0,
+    baseMatchPercentage - boxCountPenalty - sizeDifferencePenalty
+  );
+
+  return Math.round(finalMatchPercentage);
 }
