@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
+import imageCompression from "browser-image-compression";
 
 interface ImageUploaderProps {
   onImageUpload: (imageData: string) => void;
@@ -39,17 +40,65 @@ export default function ImageUploader({ onImageUpload }: ImageUploaderProps) {
     }
   };
 
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     if (file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          const imageData = e.target.result as string;
-          setPreview(imageData);
-          onImageUpload(imageData);
+      try {
+        // Create an image element to get dimensions first
+        const img = new window.Image();
+        const imageUrl = URL.createObjectURL(file);
+
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = imageUrl;
+        });
+
+        // Calculate target dimensions
+        let targetWidth = img.width;
+        let targetHeight = img.height;
+        if (img.height > 1000) {
+          const aspectRatio = img.width / img.height;
+          targetHeight = 1000;
+          targetWidth = Math.round(targetHeight * aspectRatio);
         }
-      };
-      reader.readAsDataURL(file);
+
+        // Compression options - use calculated dimensions
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: Math.max(targetWidth, targetHeight),
+          useWebWorker: true,
+          initialQuality: 0.8,
+        };
+
+        // Compress the image
+        const compressedFile = await imageCompression(file, options);
+
+        // Create a reader for the compressed file
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            const imageData = e.target.result as string;
+            setPreview(imageData);
+            onImageUpload(imageData);
+          }
+        };
+        reader.readAsDataURL(compressedFile);
+
+        // Clean up
+        URL.revokeObjectURL(imageUrl);
+      } catch (error) {
+        console.error("Error processing image:", error);
+        // Fallback to original file if processing fails
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            const imageData = e.target.result as string;
+            setPreview(imageData);
+            onImageUpload(imageData);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
