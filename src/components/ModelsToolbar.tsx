@@ -67,18 +67,25 @@ const ModelCard = React.memo(
 
     return (
       <div
-        className={`group h-[220px] flex flex-col rounded-md border transition-all cursor-pointer overflow-visible relative ${
+        className={`group h-[240px] justify-between flex flex-col rounded-md border transition-all cursor-pointer overflow-visible relative ${
           isSelected
             ? "bg-blue-900/30 border-blue-500/50 shadow-lg shadow-blue-500/20"
             : "bg-gray-800/50 border-gray-700 hover:bg-gray-700/50"
         }`}
         onClick={handleClick}
       >
-        {isBestMatch && (
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-purple-900/80 text-purple-400 text-[10px] font-medium whitespace-nowrap shadow-lg">
-            Best match
-          </div>
-        )}
+        <div className="absolute -top-3 left-0 items-center flex gap-1">
+          {model.bestModelScore && (
+            <div className="rounded-full px-2 py-0.5 bg-blue-900/90 text-blue-400 text-[10px] font-medium whitespace-nowrap shadow-lg">
+              mAP@50: {model.bestModelScore.toFixed(1)}%
+            </div>
+          )}
+          {isBestMatch && (
+            <div className="rounded-full px-2 py-0.5 bg-purple-900/90 text-purple-400 text-[10px] font-medium whitespace-nowrap shadow-lg">
+              Best match
+            </div>
+          )}
+        </div>
         <div className="flex flex-col gap-2 p-3 h-full overflow-visible">
           {/* Header with model name and status */}
           <div className="flex justify-between items-center">
@@ -148,28 +155,24 @@ const ModelCard = React.memo(
 
           {/* Model type badge */}
           <div className="flex items-center gap-2 flex-wrap">
-            {model.bestModelScore && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-purple-900/50 text-purple-400">
-                mAP@50: {model.bestModelScore.toFixed(1)}%
-              </span>
-            )}
+            {/* Removed mAP badge from here */}
           </div>
 
           {/* Top classes */}
           {topClasses.length > 0 && (
             <div className="flex flex-col gap-1">
-              <div className="flex flex-wrap gap-1 max-h-[24px] overflow-hidden">
+              <div className="flex flex-wrap gap-1 max-h-[20px] overflow-hidden">
                 {topClasses.map((cls, index) => (
                   <span
                     key={index}
-                    className="text-xs px-1.5 py-0.5 rounded bg-gray-700/50 text-gray-300 whitespace-nowrap"
+                    className="text-[10px] px-1 py-0.5 rounded bg-gray-700/50 text-gray-300 whitespace-nowrap"
                   >
                     {cls.name} ({formatNumber(cls.count)})
                   </span>
                 ))}
               </div>
               {model.classCounts && model.classCounts.length > 3 && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-gray-700/50 text-gray-300 whitespace-nowrap w-fit">
+                <span className="text-[10px] px-1 py-0.5 rounded bg-gray-700/50 text-gray-300 whitespace-nowrap w-fit">
                   +{model.classCounts.length - 3} more
                 </span>
               )}
@@ -261,6 +264,27 @@ const ModelCard = React.memo(
                 {match.toFixed(1)}% match
               </div>
             </div>
+          )}
+
+          {/* Use this model button */}
+          {model.url && model.version && (
+            <a
+              href={`https://universe.roboflow.com/roboflow-universe-projects/${model.url}/model/${model.version}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs mt-auto py-1 px-2 rounded bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 hover:text-blue-200 flex items-center justify-center gap-1 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-3 w-3"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path d="M11.3 1.046A1 1 0 0010 2v4H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 6h-5V2a1 1 0 00-1.7-.954z" />
+              </svg>
+              Use this model
+            </a>
           )}
         </div>
       </div>
@@ -528,7 +552,7 @@ function ModelsToolbar({
             height={window.innerHeight - 200}
             width="100%"
             itemCount={sortedModels.length}
-            itemSize={232}
+            itemSize={260}
             className="[&::-webkit-scrollbar]:hidden [&::-webkit-scrollbar]:w-0 [&::-webkit-scrollbar]:h-0"
           >
             {Row}
