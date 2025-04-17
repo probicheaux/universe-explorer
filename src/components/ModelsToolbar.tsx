@@ -75,11 +75,9 @@ const ModelCard = React.memo(
         onClick={handleClick}
       >
         <div className="absolute -top-3 left-0 items-center flex gap-1">
-          {model.bestModelScore && (
-            <div className="rounded-full px-2 py-0.5 bg-blue-900/90 text-blue-400 text-[10px] font-medium whitespace-nowrap shadow-lg">
-              mAP@50: {model.bestModelScore.toFixed(1)}%
-            </div>
-          )}
+          <div className="rounded-full px-2 py-0.5 bg-blue-900/90 text-blue-400 text-[10px] font-medium whitespace-nowrap shadow-lg">
+            {match.toFixed(1)}% match
+          </div>
           {isBestMatch && (
             <div className="rounded-full px-2 py-0.5 bg-purple-900/90 text-purple-400 text-[10px] font-medium whitespace-nowrap shadow-lg">
               Best match
@@ -260,9 +258,11 @@ const ModelCard = React.memo(
                   {(result.time * 1000).toFixed(0)}ms
                 </div>
               </div>
-              <div className="text-xs font-medium px-2 py-0.5 rounded bg-blue-900/50 text-blue-400 whitespace-nowrap w-fit">
-                {match.toFixed(1)}% match
-              </div>
+              {model.bestModelScore && (
+                <div className="text-xs font-medium px-2 py-0.5 rounded bg-blue-900/50 text-blue-400 whitespace-nowrap w-fit">
+                  mAP@50: {model.bestModelScore.toFixed(1)}%
+                </div>
+              )}
             </div>
           )}
 
