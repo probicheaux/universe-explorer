@@ -47,6 +47,10 @@ export const inferImage = async (
       const response = await axios({
         method: "POST",
         url: `${BASE_URL}${modelUrl}`,
+        auth: {
+          username: getEnv("INFERENCE_INTERNAL_USERNAME"),
+          password: getEnv("INFERENCE_INTERNAL_PASSWORD"),
+        },
         params: {
           api_key: apiKey,
           confidence: 0.01,
