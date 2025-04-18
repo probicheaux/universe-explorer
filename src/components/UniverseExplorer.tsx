@@ -549,8 +549,8 @@ export default function UniverseExplorer() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden relative">
-          <div className="flex-1 relative overflow-hidden">
+        <div className="flex-1 flex flex-col relative">
+          <div className="flex-1 relative">
             <ImageArea
               image={image}
               onImageChange={handleImageChange}
