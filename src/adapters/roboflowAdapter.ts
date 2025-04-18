@@ -32,7 +32,8 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const inferImage = async (
   modelUrl: string,
-  imageB64: string
+  imageB64: string,
+  confidence: number = 0.01
 ): Promise<InferImageResponse> => {
   const apiKey = getEnv("ROBOFLOW_API_KEY");
 
@@ -53,7 +54,7 @@ export const inferImage = async (
         },
         params: {
           api_key: apiKey,
-          confidence: 0.01,
+          confidence,
         },
         data: imageB64,
         headers: {
