@@ -65,12 +65,68 @@ interface RoboflowSearchDatasetPayload {
   max_knn_score?: number;
 }
 
+interface RoboflowSearchImageParams {
+  new: boolean;
+  prompt?: string | undefined;
+  prompt_image?: string | undefined;
+}
+
+interface RoboflowSearchImagePayload {
+  new?: boolean;
+  prompt?: string;
+  prompt_image?: string;
+  knn?: boolean;
+}
+
 interface RoboflowSearchResponse {
   aggregations?: object;
   hits: estypes.SearchHit[];
   from: number;
   info?: object;
 }
+
+export const roboflowSearchImages = async (
+  searchImageParams: RoboflowSearchImageParams
+) => {
+  const token = await getToken();
+
+  const OBJECTS_365_INDEXES = {
+    old: "images-prod-1.0.1-8iqlcquz92pfe9bwfgxb",
+    new: "test-objects-365",
+  };
+
+  const payload = {
+    index: OBJECTS_365_INDEXES[searchImageParams.new ? "new" : "old"],
+    prompt: searchImageParams.prompt,
+    prompt_image: searchImageParams.prompt_image,
+  } as RoboflowSearchImagePayload;
+
+  if (searchImageParams.new) {
+    payload.knn = true;
+  }
+
+  try {
+    const results = await axios({
+      method: "POST",
+      url: getEnv("SEARCH_CONFIG_QUERY_URL") + "/query-images",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      data: payload,
+    });
+
+    return results.data as RoboflowSearchResponse;
+  } catch (error) {
+    console.error(
+      "[Roboflow Search] error searching for dataset",
+      JSON.stringify(payload),
+      error
+    );
+
+    throw error;
+  }
+};
 
 export const roboflowSearchDatasets = async (
   searchParams: RoboflowSearchDatasetPayload
