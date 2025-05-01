@@ -120,6 +120,19 @@ export default function Home() {
       hasImage: !!base64Image,
     });
 
+    // just so we don't have cache to interfere with the results
+    await fetch("/api/search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt: textQuery || undefined,
+        prompt_image: base64Image || undefined,
+        useKNN: false,
+      }),
+    });
+
     // --- API Call for Engine 1 (Current Search - useKNN: false) ---
     let latency1: number | null = null;
     try {
@@ -151,7 +164,7 @@ export default function Home() {
           const ownerId = hit.fields?.owner?.[0];
           const imageId = hit.fields?.image_id?.[0];
           if (ownerId && imageId) {
-            return `https://source.roboflow.com/${ownerId}/${imageId}/original.jpg`;
+            return `https://source.roboflow.com/${ownerId}/${imageId}/thumb.jpg`;
           }
           console.warn("Skipping hit due to missing owner/image_id:", hit);
           return null;
@@ -203,7 +216,7 @@ export default function Home() {
           const ownerId = hit.fields?.owner?.[0];
           const imageId = hit.fields?.image_id?.[0];
           if (ownerId && imageId) {
-            return `https://source.roboflow.com/${ownerId}/${imageId}/original.jpg`;
+            return `https://source.roboflow.com/${ownerId}/${imageId}/thumb.jpg`;
           }
           console.warn("Skipping hit due to missing owner/image_id:", hit);
           return null;
