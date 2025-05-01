@@ -412,7 +412,7 @@ export default function Home() {
                                 alt={`Engine 2 Result ${index + 1}`}
                                 className="h-48 w-48 object-cover transform group-hover:scale-105 transition-transform duration-200"
                               />
-                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                              <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
                                 <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-sm">
                                   Click to enlarge
                                 </span>
