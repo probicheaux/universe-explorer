@@ -14,6 +14,8 @@ export async function POST(request: Request) {
       useKNN: boolean;
     };
 
+    console.log("body", body);
+
     const results = await roboflowSearchImages({
       prompt,
       prompt_image,

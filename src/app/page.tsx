@@ -3,10 +3,28 @@
 import { useState, ChangeEvent, FormEvent } from "react";
 import UniverseExplorer from "../components/UniverseExplorer";
 
-// Define types for results
+// Define type for a single search hit
+interface SearchHit {
+  _id: string;
+  _index: string;
+  _score: number;
+  fields?: {
+    image_id?: string[];
+    owner?: string[];
+  };
+}
+
+// Define type for the API response structure
+interface ApiResponse {
+  hits?: SearchHit[];
+  // Include other potential fields from the API response if necessary
+}
+
+// Define types for engine results state
 interface EngineResult {
-  images: string[]; // Assuming image URLs for now
+  images: string[];
   latency: number | null;
+  error?: string | null;
 }
 
 export default function Home() {
@@ -19,10 +37,12 @@ export default function Home() {
   const [engine1Results, setEngine1Results] = useState<EngineResult>({
     images: [],
     latency: null,
+    error: null,
   });
   const [engine2Results, setEngine2Results] = useState<EngineResult>({
     images: [],
     latency: null,
+    error: null,
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +70,6 @@ export default function Home() {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
-        // Result includes the `data:mime/type;base64,` prefix, remove it
         const base64String = (reader.result as string).split(",")[1] || null;
         resolve(base64String);
       };
@@ -68,17 +87,17 @@ export default function Home() {
 
     setIsLoading(true);
     setError(null);
-    setEngine1Results({ images: [], latency: null });
-    setEngine2Results({ images: [], latency: null });
+    setEngine1Results({ images: [], latency: null, error: null });
+    setEngine2Results({ images: [], latency: null, error: null });
 
     let base64Image: string | null = null;
     if (imageFile) {
       try {
         base64Image = await getBase64(imageFile);
         if (!base64Image) throw new Error("Failed to convert image to base64.");
-      } catch (err) {
+      } catch (err: any) {
         console.error("Image processing error:", err);
-        setError("Error processing image. Please try a different one.");
+        setError("Error processing image: " + (err.message || "Unknown error"));
         setIsLoading(false);
         return;
       }
@@ -89,8 +108,9 @@ export default function Home() {
       hasImage: !!base64Image,
     });
 
+    // --- API Call for Engine 1 (Current Search - useKNN: false) ---
+    let latency1: number | null = null;
     try {
-      // --- API Call for Engine 1 (Current Search - useKNN: false) ---
       const startTime1 = performance.now();
       const response1 = await fetch("/api/search", {
         method: "POST",
@@ -98,26 +118,51 @@ export default function Home() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          prompt: textQuery || undefined, // Send empty string as undefined
-          prompt_image: base64Image || undefined, // Send null as undefined
+          prompt: textQuery || undefined,
+          prompt_image: base64Image || undefined,
           useKNN: false,
         }),
       });
       const endTime1 = performance.now();
-      const latency1 = endTime1 - startTime1;
+      latency1 = endTime1 - startTime1;
 
       if (!response1.ok) {
-        const errorData = await response1.json().catch(() => ({})); // Catch potential JSON parsing errors
+        const errorData = await response1.json().catch(() => ({}));
         throw new Error(
-          `Engine 1 failed: ${response1.statusText} ${errorData.error || ""}`
+          `Search failed: ${response1.statusText} ${errorData.error || ""}`
         );
       }
-      // Assuming API returns { images: string[], ... } or similar
-      // Adjust based on the actual API response structure if needed
-      const results1 = await response1.json();
-      setEngine1Results({ images: results1.images || [], latency: latency1 });
+      // Process results to build URLs
+      const results1: ApiResponse = await response1.json();
+      const imageUrls1 = (results1.hits || [])
+        .map((hit) => {
+          const ownerId = hit.fields?.owner?.[0];
+          const imageId = hit.fields?.image_id?.[0];
+          if (ownerId && imageId) {
+            return `https://source.roboflow.one/${ownerId}/${imageId}/original.jpg`;
+          }
+          console.warn("Skipping hit due to missing owner/image_id:", hit);
+          return null;
+        })
+        .filter((url): url is string => url !== null); // Filter out nulls and type guard
 
-      // --- API Call for Engine 2 (KNN Search - useKNN: true) ---
+      setEngine1Results({
+        images: imageUrls1,
+        latency: latency1,
+        error: null,
+      });
+    } catch (err: any) {
+      console.error("Engine 1 Search failed:", err);
+      setEngine1Results({
+        images: [],
+        latency: latency1,
+        error: err.message || "Search request failed",
+      });
+    }
+
+    // --- API Call for Engine 2 (KNN Search - useKNN: true) ---
+    let latency2: number | null = null;
+    try {
       const startTime2 = performance.now();
       const response2 = await fetch("/api/search", {
         method: "POST",
@@ -131,25 +176,43 @@ export default function Home() {
         }),
       });
       const endTime2 = performance.now();
-      const latency2 = endTime2 - startTime2;
+      latency2 = endTime2 - startTime2;
 
       if (!response2.ok) {
         const errorData = await response2.json().catch(() => ({}));
         throw new Error(
-          `Engine 2 failed: ${response2.statusText} ${errorData.error || ""}`
+          `Search failed: ${response2.statusText} ${errorData.error || ""}`
         );
       }
-      // Adjust based on the actual API response structure if needed
-      const results2 = await response2.json();
-      setEngine2Results({ images: results2.images || [], latency: latency2 });
+      // Process results to build URLs
+      const results2: ApiResponse = await response2.json();
+      const imageUrls2 = (results2.hits || [])
+        .map((hit) => {
+          const ownerId = hit.fields?.owner?.[0];
+          const imageId = hit.fields?.image_id?.[0];
+          if (ownerId && imageId) {
+            return `https://source.roboflow.one/${ownerId}/${imageId}`;
+          }
+          console.warn("Skipping hit due to missing owner/image_id:", hit);
+          return null;
+        })
+        .filter((url): url is string => url !== null);
+
+      setEngine2Results({
+        images: imageUrls2,
+        latency: latency2,
+        error: null,
+      });
     } catch (err: any) {
-      // Catch any error type
-      console.error("Search failed:", err);
-      // Display a more specific error if possible, otherwise generic
-      setError(err.message || "Search failed. Please try again.");
-    } finally {
-      setIsLoading(false);
+      console.error("Engine 2 Search failed:", err);
+      setEngine2Results({
+        images: [],
+        latency: latency2,
+        error: err.message || "Search request failed",
+      });
     }
+
+    setIsLoading(false);
   };
 
   return (
@@ -258,14 +321,17 @@ export default function Home() {
               {!isLoading &&
                 !error &&
                 engine1Results.images.length === 0 &&
-                engine2Results.images.length === 0 && (
+                !engine1Results.error &&
+                engine2Results.images.length === 0 &&
+                !engine2Results.error && (
                   <p className="text-center text-gray-500">
-                    Results will appear here after running a benchmark.
+                    Results will appear here after running a search.
                   </p>
                 )}
               {!isLoading &&
-                (error ||
+                (engine1Results.error ||
                   engine1Results.images.length > 0 ||
+                  engine2Results.error ||
                   engine2Results.images.length > 0) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 overflow-y-auto">
                     <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col">
@@ -276,25 +342,27 @@ export default function Home() {
                         (Latency:{" "}
                         {engine1Results.latency
                           ? `${engine1Results.latency.toFixed(0)} ms`
-                          : "N/A"}
-                        )
+                          : engine1Results.error
+                          ? "N/A"
+                          : "..."}
                       </p>
                       <div className="flex-1 flex flex-wrap gap-2 justify-center content-start overflow-y-auto p-1">
-                        {engine1Results.images.length > 0
-                          ? engine1Results.images.map((imgUrl, index) => (
-                              <img
-                                key={`e1-${index}`}
-                                src={imgUrl}
-                                alt={`Engine 1 Result ${index + 1}`}
-                                className="h-24 w-24 object-cover rounded border border-gray-600"
-                              />
-                            ))
-                          : !error &&
-                            !isLoading && (
-                              <p className="text-gray-500 text-sm">
-                                No results.
-                              </p>
-                            )}
+                        {engine1Results.error ? (
+                          <p className="text-red-500 text-sm px-2 text-center">
+                            Error: {engine1Results.error}
+                          </p>
+                        ) : engine1Results.images.length > 0 ? (
+                          engine1Results.images.map((imgUrl, index) => (
+                            <img
+                              key={`e1-${index}`}
+                              src={imgUrl}
+                              alt={`Engine 1 Result ${index + 1}`}
+                              className="h-24 w-24 object-cover rounded border border-gray-600"
+                            />
+                          ))
+                        ) : (
+                          <p className="text-gray-500 text-sm">No results.</p>
+                        )}
                       </div>
                     </div>
                     <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col">
@@ -305,25 +373,27 @@ export default function Home() {
                         (Latency:{" "}
                         {engine2Results.latency
                           ? `${engine2Results.latency.toFixed(0)} ms`
-                          : "N/A"}
-                        )
+                          : engine2Results.error
+                          ? "N/A"
+                          : "..."}
                       </p>
                       <div className="flex-1 flex flex-wrap gap-2 justify-center content-start overflow-y-auto p-1">
-                        {engine2Results.images.length > 0
-                          ? engine2Results.images.map((imgUrl, index) => (
-                              <img
-                                key={`e2-${index}`}
-                                src={imgUrl}
-                                alt={`Engine 2 Result ${index + 1}`}
-                                className="h-24 w-24 object-cover rounded border border-gray-600"
-                              />
-                            ))
-                          : !error &&
-                            !isLoading && (
-                              <p className="text-gray-500 text-sm">
-                                No results.
-                              </p>
-                            )}
+                        {engine2Results.error ? (
+                          <p className="text-red-500 text-sm px-2 text-center">
+                            Error: {engine2Results.error}
+                          </p>
+                        ) : engine2Results.images.length > 0 ? (
+                          engine2Results.images.map((imgUrl, index) => (
+                            <img
+                              key={`e2-${index}`}
+                              src={imgUrl}
+                              alt={`Engine 2 Result ${index + 1}`}
+                              className="h-24 w-24 object-cover rounded border border-gray-600"
+                            />
+                          ))
+                        ) : (
+                          <p className="text-gray-500 text-sm">No results.</p>
+                        )}
                       </div>
                     </div>
                   </div>
