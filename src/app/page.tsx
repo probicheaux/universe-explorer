@@ -257,8 +257,8 @@ export default function Home() {
         {activeTab === "explorer" && <UniverseExplorer />}
         {activeTab === "benchmark" && (
           <form onSubmit={handleSearch} className="p-6 flex flex-col h-full">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="flex flex-col gap-1 w-full">
                 <label
                   htmlFor="text-input"
                   className="text-sm font-medium text-gray-300"
@@ -277,7 +277,7 @@ export default function Home() {
                   }}
                 />
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 w-full">
                 <label
                   htmlFor="image-input"
                   className="text-sm font-medium text-gray-300"
@@ -308,25 +308,24 @@ export default function Home() {
                   />
                 </label>
               </div>
-            </div>
-            <div className="mb-4 flex items-center gap-4">
-              <button
-                type="submit"
-                className={`px-4 py-2 rounded-lg text-white font-semibold transition-colors text-sm ${
-                  isLoading
-                    ? "bg-gray-600 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700"
-                }`}
-                disabled={isLoading || (!textQuery && !imageFile)}
-              >
-                {isLoading ? "Searching..." : "Search"}
-              </button>
+
+              <div className="flex items-center w-full h-full">
+                <button
+                  type="submit"
+                  className={`px-4 py-2 mt-4 rounded-lg text-white font-semibold transition-colors text-sm ${
+                    isLoading
+                      ? "bg-gray-600 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700"
+                  }`}
+                  disabled={isLoading || (!textQuery && !imageFile)}
+                >
+                  {isLoading ? "Searching..." : "Search"}
+                </button>
+              </div>
+
               {error && <p className="text-red-500 text-sm">{error}</p>}
             </div>
             <div className="flex-1 border-t border-gray-700 pt-4 flex flex-col">
-              <h2 className="text-xl font-semibold mb-4 text-gray-200">
-                Search Results Comparison
-              </h2>
               {isLoading && (
                 <p className="text-center text-gray-400">Loading results...</p>
               )}
@@ -346,7 +345,7 @@ export default function Home() {
                   engine2Results.error ||
                   engine2Results.images.length > 0) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
-                    <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col max-h-[calc(100vh-26rem)]">
+                    <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col max-h-[calc(100vh-20rem)]">
                       <h3 className="text-lg font-medium mb-1 text-center text-gray-400 flex-shrink-0">
                         Current search
                       </h3>
@@ -390,7 +389,7 @@ export default function Home() {
                         )}
                       </div>
                     </div>
-                    <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col max-h-[calc(100vh-26rem)]">
+                    <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col max-h-[calc(100vh-20rem)]">
                       <h3 className="text-lg font-medium mb-1 text-center text-gray-400 flex-shrink-0">
                         Built-in knn from ES
                       </h3>
