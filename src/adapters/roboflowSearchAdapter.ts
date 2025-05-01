@@ -91,27 +91,37 @@ export const roboflowSearchImages = async (
   const token = await getToken();
 
   const OBJECTS_365_INDEXES = {
-    old: "images-prod-1.0.1-8iqlcquz92pfe9bwfgxb",
-    new: "test-objects-365",
+    old: "images-prod-1.0.1-*",
+    new: "images-joao-new-mapping-2",
   };
 
   const payload = {
-    index: OBJECTS_365_INDEXES[searchImageParams.new ? "new" : "old"],
-    prompt: searchImageParams.prompt,
-    prompt_image: searchImageParams.prompt_image,
+    // index: OBJECTS_365_INDEXES[searchImageParams.new ? "new" : "old"],
+    index: "images-joao-new-mapping-2*",
   } as RoboflowSearchImagePayload;
 
   if (searchImageParams.new) {
     payload.knn = true;
   }
 
+  if (searchImageParams.prompt) {
+    payload.prompt = searchImageParams.prompt;
+  }
+
+  if (searchImageParams.prompt_image) {
+    payload.prompt_image = searchImageParams.prompt_image;
+  }
+
+  console.log("payload", payload);
+
   try {
     const results = await axios({
       method: "POST",
-      url: getEnv("SEARCH_CONFIG_QUERY_URL") + "/query-images",
+      // url: getEnv("SEARCH_CONFIG_QUERY_URL") + "/query-images",
+      url: "https://query-featurizer-liwxmo5pvq-uc.a.run.app/query-images",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        // Authorization: `Bearer ${token}`,
       },
       data: payload,
     });

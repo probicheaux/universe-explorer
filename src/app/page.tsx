@@ -112,8 +112,9 @@ export default function Home() {
           `Engine 1 failed: ${response1.statusText} ${errorData.error || ""}`
         );
       }
+      // Assuming API returns { images: string[], ... } or similar
+      // Adjust based on the actual API response structure if needed
       const results1 = await response1.json();
-      // Assuming API returns { images: string[] }
       setEngine1Results({ images: results1.images || [], latency: latency1 });
 
       // --- API Call for Engine 2 (KNN Search - useKNN: true) ---
@@ -138,6 +139,7 @@ export default function Home() {
           `Engine 2 failed: ${response2.statusText} ${errorData.error || ""}`
         );
       }
+      // Adjust based on the actual API response structure if needed
       const results2 = await response2.json();
       setEngine2Results({ images: results2.images || [], latency: latency2 });
     } catch (err: any) {
