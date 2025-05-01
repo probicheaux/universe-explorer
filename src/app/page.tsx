@@ -46,6 +46,8 @@ export default function Home() {
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  // Add state for image preview modal
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // Handler for image input change
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -191,7 +193,7 @@ export default function Home() {
           const ownerId = hit.fields?.owner?.[0];
           const imageId = hit.fields?.image_id?.[0];
           if (ownerId && imageId) {
-            return `https://source.roboflow.one/${ownerId}/${imageId}`;
+            return `https://source.roboflow.one/${ownerId}/${imageId}/original.jpg`;
           }
           console.warn("Skipping hit due to missing owner/image_id:", hit);
           return null;
@@ -216,7 +218,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col gap-4 w-screen h-screen p-8 bg-black relative text-white">
+    <div className="flex flex-col gap-4 w-screen h-screen p-8 relative text-white">
       <h1 className="text-white text-2xl font-bold">Multi-Modal Explorer</h1>
       <div className="flex gap-2 border-b border-gray-700 mb-4">
         <button
@@ -245,8 +247,8 @@ export default function Home() {
         {activeTab === "explorer" && <UniverseExplorer />}
         {activeTab === "benchmark" && (
           <form onSubmit={handleSearch} className="p-6 flex flex-col h-full">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="flex flex-col gap-1">
                 <label
                   htmlFor="text-input"
                   className="text-sm font-medium text-gray-300"
@@ -257,7 +259,7 @@ export default function Home() {
                   id="text-input"
                   type="text"
                   placeholder="Enter your search query..."
-                  className="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-500"
+                  className="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-500 text-sm"
                   value={textQuery}
                   onChange={(e) => {
                     setTextQuery(e.target.value);
@@ -265,7 +267,7 @@ export default function Home() {
                   }}
                 />
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1">
                 <label
                   htmlFor="image-input"
                   className="text-sm font-medium text-gray-300"
@@ -274,7 +276,7 @@ export default function Home() {
                 </label>
                 <label
                   htmlFor="image-input"
-                  className="w-full p-3 h-[calc(3rem+2px)] flex items-center justify-center rounded-lg bg-gray-800 border border-gray-700 hover:border-gray-600 cursor-pointer relative overflow-hidden"
+                  className="w-full h-10 flex items-center justify-center rounded-lg bg-gray-800 border border-gray-700 hover:border-gray-600 cursor-pointer relative overflow-hidden group"
                 >
                   {imagePreview ? (
                     <img
@@ -283,7 +285,7 @@ export default function Home() {
                       className="h-full w-auto object-contain absolute inset-0"
                     />
                   ) : (
-                    <span className="text-gray-500 z-10">
+                    <span className="text-gray-500 text-sm group-hover:text-gray-400">
                       Click or drag to upload image
                     </span>
                   )}
@@ -297,10 +299,10 @@ export default function Home() {
                 </label>
               </div>
             </div>
-            <div className="mb-6 flex items-center gap-4">
+            <div className="mb-4 flex items-center gap-4">
               <button
                 type="submit"
-                className={`px-6 py-2 rounded-lg text-white font-semibold transition-colors ${
+                className={`px-4 py-2 rounded-lg text-white font-semibold transition-colors text-sm ${
                   isLoading
                     ? "bg-gray-600 cursor-not-allowed"
                     : "bg-blue-600 hover:bg-blue-700"
@@ -311,7 +313,7 @@ export default function Home() {
               </button>
               {error && <p className="text-red-500 text-sm">{error}</p>}
             </div>
-            <div className="flex-1 border-t border-gray-700 pt-6 flex flex-col">
+            <div className="flex-1 border-t border-gray-700 pt-4 flex flex-col">
               <h2 className="text-xl font-semibold mb-4 text-gray-200">
                 Search Results Comparison
               </h2>
@@ -355,12 +357,22 @@ export default function Home() {
                           </p>
                         ) : engine1Results.images.length > 0 ? (
                           engine1Results.images.map((imgUrl, index) => (
-                            <img
+                            <button
                               key={`e1-${index}`}
-                              src={imgUrl}
-                              alt={`Engine 1 Result ${index + 1}`}
-                              className="h-48 w-48 object-cover rounded border border-gray-600"
-                            />
+                              onClick={() => setSelectedImage(imgUrl)}
+                              className="group relative overflow-hidden rounded-lg border border-gray-700 hover:border-blue-500 transition-all duration-200"
+                            >
+                              <img
+                                src={imgUrl}
+                                alt={`Engine 1 Result ${index + 1}`}
+                                className="h-48 w-48 object-cover transform group-hover:scale-105 transition-transform duration-200"
+                              />
+                              <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                                <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-sm">
+                                  Click to enlarge
+                                </span>
+                              </div>
+                            </button>
                           ))
                         ) : (
                           <p className="text-gray-500 text-sm w-full text-center">
@@ -390,12 +402,22 @@ export default function Home() {
                           </p>
                         ) : engine2Results.images.length > 0 ? (
                           engine2Results.images.map((imgUrl, index) => (
-                            <img
+                            <button
                               key={`e2-${index}`}
-                              src={imgUrl}
-                              alt={`Engine 2 Result ${index + 1}`}
-                              className="h-48 w-48 object-cover rounded border border-gray-600"
-                            />
+                              onClick={() => setSelectedImage(imgUrl)}
+                              className="group relative overflow-hidden rounded-lg border border-gray-700 hover:border-blue-500 transition-all duration-200"
+                            >
+                              <img
+                                src={imgUrl}
+                                alt={`Engine 2 Result ${index + 1}`}
+                                className="h-48 w-48 object-cover transform group-hover:scale-105 transition-transform duration-200"
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                                <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-sm">
+                                  Click to enlarge
+                                </span>
+                              </div>
+                            </button>
                           ))
                         ) : (
                           <p className="text-gray-500 text-sm w-full text-center">
@@ -410,6 +432,40 @@ export default function Home() {
           </form>
         )}
       </div>
+
+      {/* Image Preview Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-[90vw] max-h-[90vh]">
+            <button
+              className="absolute -top-10 right-0 text-white hover:text-gray-300"
+              onClick={() => setSelectedImage(null)}
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+            <img
+              src={selectedImage}
+              alt="Preview"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
