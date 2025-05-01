@@ -88,19 +88,19 @@ interface RoboflowSearchResponse {
 export const roboflowSearchImages = async (
   searchImageParams: RoboflowSearchImageParams
 ) => {
-  // const token = await getToken();
+  const token = await getToken();
 
-  // const OBJECTS_365_INDEXES = {
-  //   old: "images-prod-1.0.1-*",
-  //   new: "images-joao-new-mapping-2",
-  // };
+  const OBJECTS_365_INDEXES = {
+    old: "images-prod-1.0.1-8iqlcquz92pfe9bwfgxb*",
+    new: "test-objects-365*",
+  };
 
   const payload = {
-    // index: OBJECTS_365_INDEXES[searchImageParams.new ? "new" : "old"],
-    index: "images-joao-new-mapping-2*",
+    index: OBJECTS_365_INDEXES[searchImageParams.new ? "new" : "old"],
+    project: "roboflow-platform",
     fields: ["image_id", "owner"],
     from: 0,
-    size: 50,
+    size: 100,
   } as RoboflowSearchImagePayload;
 
   if (searchImageParams.new) {
@@ -117,14 +117,23 @@ export const roboflowSearchImages = async (
 
   console.log("payload", payload);
 
+  // print the full curl command like the axios request
+  console.log(
+    "request we're making",
+    `curl -X POST ${getEnv(
+      "SEARCH_CONFIG_QUERY_URL"
+    )}/query-images -H "Content-Type: application/json" -H "Authorization: Bearer ${token}" -d '${JSON.stringify(
+      payload
+    )}'`
+  );
+
   try {
     const results = await axios({
       method: "POST",
-      // url: getEnv("SEARCH_CONFIG_QUERY_URL") + "/query-images",
-      url: "https://query-featurizer-liwxmo5pvq-uc.a.run.app/query-images",
+      url: getEnv("SEARCH_CONFIG_QUERY_URL") + "/query-images",
       headers: {
         "Content-Type": "application/json",
-        // Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
       data: payload,
     });
