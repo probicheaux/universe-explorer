@@ -49,6 +49,16 @@ export default function Home() {
   // Add state for image preview modal
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+  // Add function to calculate latency improvement
+  const getLatencyImprovement = () => {
+    if (!engine1Results.latency || !engine2Results.latency) return null;
+    const improvement =
+      ((engine1Results.latency - engine2Results.latency) /
+        engine1Results.latency) *
+      100;
+    return improvement.toFixed(1);
+  };
+
   // Handler for image input change
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -338,8 +348,7 @@ export default function Home() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
                     <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col max-h-[calc(100vh-26rem)]">
                       <h3 className="text-lg font-medium mb-1 text-center text-gray-400 flex-shrink-0">
-                        {" "}
-                        Current search{" "}
+                        Current search
                       </h3>
                       <p className="text-xs text-center text-gray-500 mb-2 flex-shrink-0">
                         (Latency:{" "}
@@ -383,8 +392,7 @@ export default function Home() {
                     </div>
                     <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col max-h-[calc(100vh-26rem)]">
                       <h3 className="text-lg font-medium mb-1 text-center text-gray-400 flex-shrink-0">
-                        {" "}
-                        Built-in knn from ES{" "}
+                        Built-in knn from ES
                       </h3>
                       <p className="text-xs text-center text-gray-500 mb-2 flex-shrink-0">
                         (Latency:{" "}
@@ -395,6 +403,11 @@ export default function Home() {
                           : "..."}{" "}
                         )
                       </p>
+                      {engine1Results.latency && engine2Results.latency && (
+                        <p className="text-xs text-center text-green-400 mb-2 flex-shrink-0">
+                          {getLatencyImprovement()}% faster than current search
+                        </p>
+                      )}
                       <div className="flex-1 flex flex-wrap gap-4 justify-center content-start overflow-y-auto p-1 custom-scrollbar">
                         {engine2Results.error ? (
                           <p className="text-red-500 text-sm px-2 text-center w-full">
