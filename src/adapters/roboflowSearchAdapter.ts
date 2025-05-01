@@ -88,12 +88,12 @@ interface RoboflowSearchResponse {
 export const roboflowSearchImages = async (
   searchImageParams: RoboflowSearchImageParams
 ) => {
-  const token = await getToken();
+  // const token = await getToken();
 
-  const OBJECTS_365_INDEXES = {
-    old: "images-prod-1.0.1-*",
-    new: "images-joao-new-mapping-2",
-  };
+  // const OBJECTS_365_INDEXES = {
+  //   old: "images-prod-1.0.1-*",
+  //   new: "images-joao-new-mapping-2",
+  // };
 
   const payload = {
     // index: OBJECTS_365_INDEXES[searchImageParams.new ? "new" : "old"],
