@@ -2,7 +2,7 @@
 
 import { useState, ChangeEvent, FormEvent } from "react";
 import UniverseExplorer from "../components/UniverseExplorer";
-
+import { cn } from "@/utils/cn";
 // Define type for a single search hit
 interface SearchHit {
   _id: string;
@@ -52,11 +52,8 @@ export default function Home() {
   // Add function to calculate latency improvement
   const getLatencyImprovement = () => {
     if (!engine1Results.latency || !engine2Results.latency) return null;
-    const improvement =
-      ((engine1Results.latency - engine2Results.latency) /
-        engine1Results.latency) *
-      100;
-    return improvement.toFixed(1);
+    const improvement = engine1Results.latency / engine2Results.latency;
+    return improvement.toFixed(2);
   };
 
   // Handler for image input change
@@ -402,7 +399,7 @@ export default function Home() {
                         )}
                       </div>
                     </div>
-                    <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col max-h-[calc(100vh-20rem)]">
+                    <div className="relative bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col max-h-[calc(100vh-20rem)]">
                       <h3 className="text-lg font-medium mb-1 text-center text-gray-400 flex-shrink-0">
                         Built-in knn from ES
                       </h3>
@@ -415,11 +412,23 @@ export default function Home() {
                           : "..."}{" "}
                         )
                       </p>
-                      {engine1Results.latency && engine2Results.latency && (
-                        <p className="text-xs text-center text-green-400 mb-2 flex-shrink-0">
-                          {getLatencyImprovement()}% faster than current search
-                        </p>
-                      )}
+                      {engine1Results.latency &&
+                        engine2Results.latency &&
+                        Number(getLatencyImprovement()) > 1 && (
+                          <p
+                            className={cn(
+                              "absolute top-2 left-2 text-xs text-center mb-2 flex-shrink-0 px-3 py-2 rounded-lg",
+                              getLatencyImprovement() &&
+                                Number(getLatencyImprovement()) > 1
+                                ? "text-green-400 bg-green-900/50"
+                                : "text-red-400 bg-red-900/50"
+                            )}
+                          >
+                            {Number(getLatencyImprovement()) > 1
+                              ? `${getLatencyImprovement()}x faster`
+                              : `${getLatencyImprovement()}x slower`}
+                          </p>
+                        )}
                       <div className="flex-1 flex flex-wrap gap-4 justify-center content-start overflow-y-auto p-1 custom-scrollbar">
                         {engine2Results.error ? (
                           <p className="text-red-500 text-sm px-2 text-center w-full">
