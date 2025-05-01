@@ -355,7 +355,7 @@ export default function Home() {
                   engine2Results.error ||
                   engine2Results.images.length > 0) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
-                    <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col max-h-[calc(100vh-20rem)]">
+                    <div className="relative bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col max-h-[calc(100vh-20rem)]">
                       <h3 className="text-lg font-medium mb-1 text-center text-gray-400 flex-shrink-0">
                         Current search
                       </h3>
@@ -368,6 +368,28 @@ export default function Home() {
                           : "..."}{" "}
                         )
                       </p>
+
+                      {engine1Results.latency &&
+                        engine2Results.latency &&
+                        Number(getLatencyImprovement()) < 1 && (
+                          <p
+                            className={cn(
+                              "absolute top-2 left-2 text-xs text-center mb-2 flex-shrink-0 px-3 py-2 rounded-lg",
+                              getLatencyImprovement() &&
+                                Number(getLatencyImprovement()) < 1
+                                ? "text-green-400 bg-green-900/50"
+                                : "text-red-400 bg-red-900/50"
+                            )}
+                          >
+                            {Number(getLatencyImprovement()) < 1
+                              ? `${(
+                                  1 / Number(getLatencyImprovement())
+                                ).toFixed(2)}x faster`
+                              : `${(
+                                  1 / Number(getLatencyImprovement())
+                                ).toFixed(2)}x slower`}
+                          </p>
+                        )}
                       <div className="flex-1 flex flex-wrap gap-4 justify-center content-start overflow-y-auto p-1 custom-scrollbar">
                         {engine1Results.error ? (
                           <p className="text-red-500 text-sm px-2 text-center w-full">
