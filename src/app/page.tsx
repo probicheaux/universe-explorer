@@ -141,7 +141,7 @@ export default function Home() {
           const ownerId = hit.fields?.owner?.[0];
           const imageId = hit.fields?.image_id?.[0];
           if (ownerId && imageId) {
-            return `https://source.roboflow.one/${ownerId}/${imageId}/original.jpg`;
+            return `https://source.roboflow.com/${ownerId}/${imageId}/original.jpg`;
           }
           console.warn("Skipping hit due to missing owner/image_id:", hit);
           return null;
@@ -193,7 +193,7 @@ export default function Home() {
           const ownerId = hit.fields?.owner?.[0];
           const imageId = hit.fields?.image_id?.[0];
           if (ownerId && imageId) {
-            return `https://source.roboflow.one/${ownerId}/${imageId}/original.jpg`;
+            return `https://source.roboflow.com/${ownerId}/${imageId}/original.jpg`;
           }
           console.warn("Skipping hit due to missing owner/image_id:", hit);
           return null;
