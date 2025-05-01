@@ -333,22 +333,24 @@ export default function Home() {
                   engine1Results.images.length > 0 ||
                   engine2Results.error ||
                   engine2Results.images.length > 0) && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 overflow-y-auto">
-                    <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col">
-                      <h3 className="text-lg font-medium mb-1 text-center text-gray-400">
-                        Current search
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
+                    <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col max-h-[calc(100vh-26rem)]">
+                      <h3 className="text-lg font-medium mb-1 text-center text-gray-400 flex-shrink-0">
+                        {" "}
+                        Current search{" "}
                       </h3>
-                      <p className="text-xs text-center text-gray-500 mb-2">
+                      <p className="text-xs text-center text-gray-500 mb-2 flex-shrink-0">
                         (Latency:{" "}
                         {engine1Results.latency
                           ? `${engine1Results.latency.toFixed(0)} ms`
                           : engine1Results.error
                           ? "N/A"
-                          : "..."}
+                          : "..."}{" "}
+                        )
                       </p>
-                      <div className="flex-1 flex flex-wrap gap-2 justify-center content-start overflow-y-auto p-1">
+                      <div className="flex-1 flex flex-wrap gap-4 justify-center content-start overflow-y-auto p-1 custom-scrollbar">
                         {engine1Results.error ? (
-                          <p className="text-red-500 text-sm px-2 text-center">
+                          <p className="text-red-500 text-sm px-2 text-center w-full">
                             Error: {engine1Results.error}
                           </p>
                         ) : engine1Results.images.length > 0 ? (
@@ -357,29 +359,33 @@ export default function Home() {
                               key={`e1-${index}`}
                               src={imgUrl}
                               alt={`Engine 1 Result ${index + 1}`}
-                              className="h-24 w-24 object-cover rounded border border-gray-600"
+                              className="h-48 w-48 object-cover rounded border border-gray-600"
                             />
                           ))
                         ) : (
-                          <p className="text-gray-500 text-sm">No results.</p>
+                          <p className="text-gray-500 text-sm w-full text-center">
+                            No results.
+                          </p>
                         )}
                       </div>
                     </div>
-                    <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col">
-                      <h3 className="text-lg font-medium mb-1 text-center text-gray-400">
-                        Built-in knn from ES
+                    <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col max-h-[calc(100vh-26rem)]">
+                      <h3 className="text-lg font-medium mb-1 text-center text-gray-400 flex-shrink-0">
+                        {" "}
+                        Built-in knn from ES{" "}
                       </h3>
-                      <p className="text-xs text-center text-gray-500 mb-2">
+                      <p className="text-xs text-center text-gray-500 mb-2 flex-shrink-0">
                         (Latency:{" "}
                         {engine2Results.latency
                           ? `${engine2Results.latency.toFixed(0)} ms`
                           : engine2Results.error
                           ? "N/A"
-                          : "..."}
+                          : "..."}{" "}
+                        )
                       </p>
-                      <div className="flex-1 flex flex-wrap gap-2 justify-center content-start overflow-y-auto p-1">
+                      <div className="flex-1 flex flex-wrap gap-4 justify-center content-start overflow-y-auto p-1 custom-scrollbar">
                         {engine2Results.error ? (
-                          <p className="text-red-500 text-sm px-2 text-center">
+                          <p className="text-red-500 text-sm px-2 text-center w-full">
                             Error: {engine2Results.error}
                           </p>
                         ) : engine2Results.images.length > 0 ? (
@@ -388,11 +394,13 @@ export default function Home() {
                               key={`e2-${index}`}
                               src={imgUrl}
                               alt={`Engine 2 Result ${index + 1}`}
-                              className="h-24 w-24 object-cover rounded border border-gray-600"
+                              className="h-48 w-48 object-cover rounded border border-gray-600"
                             />
                           ))
                         ) : (
-                          <p className="text-gray-500 text-sm">No results.</p>
+                          <p className="text-gray-500 text-sm w-full text-center">
+                            No results.
+                          </p>
                         )}
                       </div>
                     </div>

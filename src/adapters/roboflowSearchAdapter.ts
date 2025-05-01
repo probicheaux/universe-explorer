@@ -99,6 +99,8 @@ export const roboflowSearchImages = async (
     // index: OBJECTS_365_INDEXES[searchImageParams.new ? "new" : "old"],
     index: "images-joao-new-mapping-2*",
     fields: ["image_id", "owner"],
+    from: 0,
+    size: 50,
   } as RoboflowSearchImagePayload;
 
   if (searchImageParams.new) {
