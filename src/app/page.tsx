@@ -32,8 +32,6 @@ interface EngineResult {
 export default function Home() {
   // State for Benchmark Tab
   const [textQuery, setTextQuery] = useState<string>("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [engine1Results, setEngine1Results] = useState<EngineResult>({
     images: [],
     latency: null,
@@ -56,41 +54,11 @@ export default function Home() {
     return improvement.toFixed(2);
   };
 
-  // Handler for image input change
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-      setError(null); // Clear error on new image upload
-    } else {
-      setImageFile(null);
-      setImagePreview(null);
-    }
-  };
-
-  // Function to get base64 string from File object
-  const getBase64 = (file: File): Promise<string | null> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const base64String = (reader.result as string).split(",")[1] || null;
-        resolve(base64String);
-      };
-      reader.onerror = (error) => reject(error);
-    });
-  };
-
   // Handler for triggering the search
   const handleSearch = async (event: FormEvent) => {
     event.preventDefault();
-    if (!textQuery && !imageFile) {
-      setError("Please provide a text query or upload an image.");
+    if (!textQuery) {
+      setError("Please provide a text query.");
       return;
     }
 
@@ -99,22 +67,8 @@ export default function Home() {
     setEngine1Results({ images: [], latency: null, error: null });
     setEngine2Results({ images: [], latency: null, error: null });
 
-    let base64Image: string | null = null;
-    if (imageFile) {
-      try {
-        base64Image = await getBase64(imageFile);
-        if (!base64Image) throw new Error("Failed to convert image to base64.");
-      } catch (err: any) {
-        console.error("Image processing error:", err);
-        setError("Error processing image: " + (err.message || "Unknown error"));
-        setIsLoading(false);
-        return;
-      }
-    }
-
     console.log("Starting search with:", {
       textQuery,
-      hasImage: !!base64Image,
     });
 
     const searchRequest = async (
@@ -131,7 +85,6 @@ export default function Home() {
           },
           body: JSON.stringify({
             prompt: textQuery || undefined,
-            prompt_image: base64Image || undefined,
             index,
           }),
         });
@@ -230,37 +183,6 @@ export default function Home() {
                     setError(null);
                   }}
                 />
-              </div>
-              <div className="flex flex-col gap-1 w-full">
-                <label
-                  htmlFor="image-input"
-                  className="text-sm font-medium text-gray-300"
-                >
-                  Image Input {imageFile ? `(${imageFile.name})` : ""}
-                </label>
-                <label
-                  htmlFor="image-input"
-                  className="w-full h-10 flex items-center justify-center rounded-lg bg-gray-800 border border-gray-700 hover:border-gray-600 cursor-pointer relative overflow-hidden group"
-                >
-                  {imagePreview ? (
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="h-full w-auto object-contain absolute inset-0"
-                    />
-                  ) : (
-                    <span className="text-gray-500 text-sm group-hover:text-gray-400">
-                      Click or drag to upload image
-                    </span>
-                  )}
-                  <input
-                    id="image-input"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageChange}
-                  />
-                </label>
               </div>
             </div>
 
