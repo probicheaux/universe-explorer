@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, ChangeEvent, FormEvent } from "react";
-import UniverseExplorer from "../components/UniverseExplorer";
 import { cn } from "@/utils/cn";
 // Define type for a single search hit
 interface SearchHit {
@@ -28,8 +27,6 @@ interface EngineResult {
 }
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState("explorer");
-
   // State for Benchmark Tab
   const [textQuery, setTextQuery] = useState<string>("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -239,34 +236,10 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-4 w-screen h-screen p-8 relative text-white">
-      <h1 className="text-white text-2xl font-bold">Multi-Modal Explorer</h1>
-      <div className="flex gap-2 border-b border-gray-700 mb-4">
-        <button
-          className={`px-4 py-2 rounded-t-md ${
-            activeTab === "explorer"
-              ? "bg-gray-800 border border-b-0 border-gray-700"
-              : "bg-gray-900/50 hover:bg-gray-800/70"
-          }`}
-          onClick={() => setActiveTab("explorer")}
-        >
-          Universe Explorer
-        </button>
-        <button
-          className={`px-4 py-2 rounded-t-md ${
-            activeTab === "benchmark"
-              ? "bg-gray-800 border border-b-0 border-gray-700"
-              : "bg-gray-900/50 hover:bg-gray-800/70"
-          }`}
-          onClick={() => setActiveTab("benchmark")}
-        >
-          Image Search Benchmark
-        </button>
-      </div>
+      <h1 className="text-white text-2xl font-bold">Image Search Benchmark</h1>
 
       <div className="relative flex-1 w-full rounded-xl bg-gray-900/50 backdrop-blur-md border border-gray-800 shadow-lg overflow-hidden">
-        {activeTab === "explorer" && <UniverseExplorer />}
-        {activeTab === "benchmark" && (
-          <form onSubmit={handleSearch} className="p-6 flex flex-col h-full">
+        <form onSubmit={handleSearch} className="p-6 flex flex-col h-full">
             <div className="flex items-center gap-4 mb-2">
               <div className="flex flex-col gap-1 w-full">
                 <label
@@ -486,7 +459,6 @@ export default function Home() {
                 )}
             </div>
           </form>
-        )}
       </div>
 
       {/* Image Preview Modal */}
