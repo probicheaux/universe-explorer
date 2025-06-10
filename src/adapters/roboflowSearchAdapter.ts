@@ -71,11 +71,12 @@ interface RoboflowSearchImageParams {
   prompt_image?: string | undefined;
   index: string;
   workspace_id?: string;
+  sort?: RoboflowSearchSortQueryTerm[];
 }
 
 interface RoboflowSearchImagePayload {
   new?: boolean;
-  query?: { queryPrompt: string };
+  prompt?: string;
   prompt_image?: string;
   knn?: boolean;
   index?: string;
@@ -84,6 +85,7 @@ interface RoboflowSearchImagePayload {
   from?: number;
   size?: number;
   workspace_id?: string;
+  sort?: RoboflowSearchSortQueryTerm[];
 }
 
 interface RoboflowSearchResponse {
@@ -120,6 +122,10 @@ export const roboflowSearchImages = async (
 
   if (searchImageParams.workspace_id) {
     payload.workspace_id = searchImageParams.workspace_id;
+  }
+
+  if (searchImageParams.sort) {
+    payload.sort = searchImageParams.sort;
   }
 
   console.log("payload", payload);

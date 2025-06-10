@@ -114,64 +114,78 @@ export default function Home() {
       hasImage: !!base64Image,
     });
 
-    const workspaceId = "8IqlCQUz92pfe9BWFgXB";
+    const workspaceIds = ["8IqlCQUz92pfe9BWFgXB", "wUjRYGshKaYdH3RgrMSZ"];
 
     const searchRequest = async (
       index: string,
       useKNN: boolean,
       setResults: (results: EngineResult) => void
     ) => {
-      let latency: number | null = null;
-      try {
-        const startTime = performance.now();
-        const response = await fetch("/api/search", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            query: textQuery || undefined,
-            prompt_image: base64Image || undefined,
-            index,
-            workspace_id: workspaceId,
-          }),
-        });
-        const endTime = performance.now();
-        latency = endTime - startTime;
+      let totalLatency = 0;
+      const allHits: SearchHit[] = [];
+      const errors: string[] = [];
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            `Search failed: ${response.statusText} ${errorData.error || ""}`
+      const requests = workspaceIds.map(async (workspaceId) => {
+        try {
+          const startTime = performance.now();
+          const response = await fetch("/api/search", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              query: textQuery || undefined,
+              prompt_image: base64Image || undefined,
+              index,
+              workspace_id: workspaceId,
+            }),
+          });
+          const endTime = performance.now();
+          totalLatency += endTime - startTime;
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(
+              `Search failed for ${workspaceId}: ${response.statusText} ${
+                errorData.error || ""
+              }`
+            );
+          }
+
+          const results: ApiResponse = await response.json();
+          if (results.hits) {
+            allHits.push(...results.hits);
+          }
+        } catch (err: any) {
+          console.error(
+            `Search failed for index ${index} and workspace ${workspaceId}:`,
+            err
           );
+          errors.push(err.message || `Request failed for ${workspaceId}`);
         }
+      });
 
-        const results: ApiResponse = await response.json();
-        const imageUrls = (results.hits || [])
-          .map((hit) => {
-            const ownerId = hit.fields?.owner?.[0];
-            const imageId = hit.fields?.image_id?.[0];
-            if (ownerId && imageId) {
-              return `https://source.roboflow.com/${ownerId}/${imageId}/thumb.jpg`;
-            }
-            console.warn("Skipping hit due to missing owner/image_id:", hit);
-            return null;
-          })
-          .filter((url): url is string => url !== null);
+      await Promise.all(requests);
 
-        setResults({
-          images: imageUrls,
-          latency: latency,
-          error: null,
-        });
-      } catch (err: any) {
-        console.error(`Search failed for index ${index}:`, err);
-        setResults({
-          images: [],
-          latency: latency,
-          error: err.message || "Search request failed",
-        });
-      }
+      allHits.sort((a, b) => b._score - a._score);
+
+      const imageUrls = allHits
+        .map((hit) => {
+          const ownerId = hit.fields?.owner?.[0];
+          const imageId = hit.fields?.image_id?.[0];
+          if (ownerId && imageId) {
+            return `https://source.roboflow.com/${ownerId}/${imageId}/thumb.jpg`;
+          }
+          console.warn("Skipping hit due to missing owner/image_id:", hit);
+          return null;
+        })
+        .filter((url): url is string => url !== null);
+
+      setResults({
+        images: imageUrls,
+        latency: totalLatency,
+        error: errors.length > 0 ? errors.join(", ") : null,
+      });
     };
 
     await Promise.all([
@@ -239,23 +253,29 @@ export default function Home() {
                   />
                 </label>
               </div>
-
-              <div className="flex items-center w-full h-full">
-                <button
-                  type="submit"
-                  className={`px-4 py-2 mt-4 rounded-lg text-white font-semibold transition-colors text-sm ${
-                    isLoading
-                      ? "bg-gray-600 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700"
-                  }`}
-                  disabled={isLoading || (!textQuery && !imageFile)}
-                >
-                  {isLoading ? "Searching..." : "Search"}
-                </button>
-              </div>
-
-              {error && <p className="text-red-500 text-sm">{error}</p>}
             </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="submit"
+                className={cn(
+                  "px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2",
+                  "bg-blue-600 hover:bg-blue-700 text-white",
+                  { "opacity-50 cursor-not-allowed": isLoading }
+                )}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Searching...
+                  </>
+                ) : (
+                  "Search"
+                )}
+              </button>
+            </div>
+
             <div className="flex-1 border-t border-gray-700 pt-4 flex flex-col">
               {isLoading && (
                 <p className="text-center text-gray-400">Loading results...</p>
@@ -441,6 +461,10 @@ export default function Home() {
             />
           </div>
         </div>
+      )}
+
+      {error && (
+        <p className="text-red-400 text-sm mt-4 text-center">{error}</p>
       )}
     </div>
   );

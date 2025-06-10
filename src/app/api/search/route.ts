@@ -10,12 +10,14 @@ export async function POST(request: Request) {
       useKNN = false,
       index,
       workspace_id,
+      sort,
     } = body as {
       query?: string;
       prompt_image?: string;
       useKNN: boolean;
       index: string;
       workspace_id?: string;
+      sort?: any[]; // Using any for simplicity, consider defining a proper type
     };
 
     console.log("body", body);
@@ -26,6 +28,7 @@ export async function POST(request: Request) {
       new: useKNN,
       index,
       ...(workspace_id && { workspace_id }),
+      ...(sort && { sort }),
     });
 
     return NextResponse.json(results);
