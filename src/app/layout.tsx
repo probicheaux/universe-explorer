@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Universe Explorer",
+  title: "Meta Perception Encoder Powered by Roboflow",
   description: "Explore and understand your images with AI",
 };
 

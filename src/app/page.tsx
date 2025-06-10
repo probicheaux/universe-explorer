@@ -198,7 +198,16 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-4 w-screen h-screen p-8 relative text-white">
-      <h1 className="text-white text-2xl font-bold">Image Search Benchmark</h1>
+      <div className="flex justify-center items-center gap-4">
+        <img src="/meta-logo.png" alt="Meta Logo" className="h-12" />
+        <img src="/roboflow-logo.png" alt="Roboflow Logo" className="h-12" />
+      </div>
+      <div className="text-center">
+        <h1 className="text-white text-4xl font-bold">
+          Meta Perception Encoder
+        </h1>
+        <p className="text-white text-2xl font-bold">Powered by Roboflow</p>
+      </div>
 
       <div className="relative flex-1 w-full rounded-xl bg-gray-900/50 backdrop-blur-md border border-gray-800 shadow-lg overflow-hidden">
         <form onSubmit={handleSearch} className="p-6 flex flex-col h-full">
