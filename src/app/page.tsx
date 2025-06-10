@@ -142,9 +142,9 @@ export default function Home() {
       </div>
       <div className="text-center">
         <h1 className="text-white text-4xl font-bold">
-          Meta Perception Encoder
+          CLIP vs Perception Encoder
         </h1>
-        <p className="text-white text-2xl font-bold">Powered by Roboflow</p>
+        <p className="text-white text-2xl font-bold">Meta Model Powered by Roboflow Search</p>
       </div>
 
       <div className="relative flex-1 w-full rounded-xl bg-gray-900/50 backdrop-blur-md border border-gray-800 shadow-lg overflow-hidden">
