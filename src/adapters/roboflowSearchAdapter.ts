@@ -111,7 +111,7 @@ export const roboflowSearchImages = async (
   }
 
   if (searchImageParams.query) {
-    payload.query = { queryPrompt: searchImageParams.query };
+    payload.prompt = searchImageParams.query;
   }
 
   if (searchImageParams.prompt_image) {

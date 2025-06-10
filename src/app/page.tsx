@@ -176,7 +176,7 @@ export default function Home() {
 
     await Promise.all([
       searchRequest("images-prod-1.0.3", false, setEngine1Results),
-      searchRequest("pe-images-prod-1.0.3", false, setEngine2Results),
+      searchRequest("pe-images", false, setEngine2Results),
     ]);
 
     setIsLoading(false);
@@ -344,7 +344,7 @@ export default function Home() {
                     </div>
                     <div className="relative bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col max-h-[calc(100vh-20rem)]">
                       <h3 className="text-lg font-medium mb-1 text-center text-gray-400 flex-shrink-0">
-                        pe-images-prod-1.0.3
+                        pe-images
                       </h3>
                       <p className="text-xs text-center text-gray-500 mb-2 flex-shrink-0">
                         (Latency:{" "}
