@@ -34,7 +34,7 @@ type RoboflowSearchRangedQueryValue = { gte?: number; lte?: number };
 
 interface RoboflowSearchDatasetPayload {
   index?: string;
-  prompt?: string;
+  query?: string;
   prompt_image?: string;
   type?: string;
   from: number;
@@ -113,7 +113,7 @@ export const roboflowSearchImages = async (
   }
 
   if (searchImageParams.prompt) {
-    payload.prompt = searchImageParams.prompt;
+    payload.query = searchImageParams.prompt;
   }
 
   if (searchImageParams.prompt_image) {
@@ -143,7 +143,7 @@ export const roboflowSearchImages = async (
   try {
     const results = await axios({
       method: "POST",
-      url: getEnv("SEARCH_CONFIG_QUERY_URL") + "/query-images",
+      url: getEnv("SEARCH_CONFIG_QUERY_URL") + "/roboql/images",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
