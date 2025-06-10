@@ -21,7 +21,10 @@ interface ApiResponse {
 
 // Define types for engine results state
 interface EngineResult {
-  images: string[];
+  images: {
+    url: string;
+    ownerId: string;
+  }[];
   latency: number | null;
   error?: string | null;
 }
@@ -148,20 +151,30 @@ export default function Home() {
         const allHits = results.hits || [];
         allHits.sort((a, b) => b._score - a._score);
 
-        const imageUrls = allHits
+        const imageObjects = allHits
           .map((hit) => {
             const ownerId = hit.fields?.owner?.[0];
             const imageId = hit.fields?.image_id?.[0];
             if (ownerId && imageId) {
-              return `https://source.roboflow.com/${ownerId}/${imageId}/thumb.jpg`;
+              return {
+                url: `https://source.roboflow.com/${ownerId}/${imageId}/thumb.jpg`,
+                ownerId,
+              };
             }
             console.warn("Skipping hit due to missing owner/image_id:", hit);
             return null;
           })
-          .filter((url): url is string => url !== null);
+          .filter(
+            (
+              obj
+            ): obj is {
+              url: string;
+              ownerId: string;
+            } => obj !== null
+          );
 
         setResults({
-          images: imageUrls,
+          images: imageObjects,
           latency: latency,
           error: null,
         });
@@ -284,8 +297,8 @@ export default function Home() {
                   engine2Results.images.length > 0) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
                     <div className="relative bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col max-h-[calc(100vh-20rem)]">
-                      <h3 className="text-lg font-medium mb-1 text-center text-gray-400 flex-shrink-0">
-                        images-prod-1.0.3
+                      <h3 className="text-2xl font-bold mb-1 text-center text-white flex-shrink-0">
+                        CLIP
                       </h3>
                       <p className="text-xs text-center text-gray-500 mb-2 flex-shrink-0">
                         (Latency:{" "}
@@ -324,14 +337,22 @@ export default function Home() {
                             Error: {engine1Results.error}
                           </p>
                         ) : engine1Results.images.length > 0 ? (
-                          engine1Results.images.map((imgUrl, index) => (
+                          engine1Results.images.map((img, index) => (
                             <button
                               key={`e1-${index}`}
-                              onClick={() => setSelectedImage(imgUrl.replace("thumb.jpg", "original.jpg"))}
-                              className="group relative overflow-hidden rounded-lg border border-gray-700 hover:border-blue-500 transition-all duration-200"
+                              onClick={() => setSelectedImage(img.url.replace("thumb.jpg", "original.jpg"))}
+                              className={cn(
+                                "group relative overflow-hidden rounded-lg border hover:border-blue-500 transition-all duration-200",
+                                {
+                                  "border-[#a351fb] border-3":
+                                    img.ownerId === "wUjRYGshKaYdH3RgrMSZ",
+                                  "border-gray-700":
+                                    img.ownerId !== "wUjRYGshKaYdH3RgrMSZ",
+                                }
+                              )}
                             >
                               <img
-                                src={imgUrl}
+                                src={img.url}
                                 alt={`Engine 1 Result ${index + 1}`}
                                 className="h-48 w-48 object-cover transform group-hover:scale-105 transition-transform duration-200"
                               />
@@ -350,8 +371,8 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="relative bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col max-h-[calc(100vh-20rem)]">
-                      <h3 className="text-lg font-medium mb-1 text-center text-gray-400 flex-shrink-0">
-                        pe-images
+                      <h3 className="text-2xl font-bold mb-1 text-center text-white flex-shrink-0">
+                        Perception Encoder
                       </h3>
                       <p className="text-xs text-center text-gray-500 mb-2 flex-shrink-0">
                         (Latency:{" "}
@@ -385,14 +406,22 @@ export default function Home() {
                             Error: {engine2Results.error}
                           </p>
                         ) : engine2Results.images.length > 0 ? (
-                          engine2Results.images.map((imgUrl, index) => (
+                          engine2Results.images.map((img, index) => (
                             <button
                               key={`e2-${index}`}
-                              onClick={() => setSelectedImage(imgUrl.replace("thumb.jpg", "original.jpg"))}
-                              className="group relative overflow-hidden rounded-lg border border-gray-700 hover:border-blue-500 transition-all duration-200"
+                              onClick={() => setSelectedImage(img.url.replace("thumb.jpg", "original.jpg"))}
+                              className={cn(
+                                "group relative overflow-hidden rounded-lg border hover:border-blue-500 transition-all duration-200",
+                                {
+                                  "border-[#a351fb] border-3":
+                                    img.ownerId === "wUjRYGshKaYdH3RgrMSZ",
+                                  "border-gray-700":
+                                    img.ownerId !== "wUjRYGshKaYdH3RgrMSZ",
+                                }
+                              )}
                             >
                               <img
-                                src={imgUrl}
+                                src={img.url}
                                 alt={`Engine 2 Result ${index + 1}`}
                                 className="h-48 w-48 object-cover transform group-hover:scale-105 transition-transform duration-200"
                               />
