@@ -134,7 +134,7 @@ export default function Home() {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              query: textQuery || undefined,
+              prompt: textQuery || undefined,
               prompt_image: base64Image || undefined,
               index,
               workspace_id: workspaceId,
@@ -190,7 +190,7 @@ export default function Home() {
 
     await Promise.all([
       searchRequest("images-prod-1.0.3", false, setEngine1Results),
-      searchRequest("pe-images", false, setEngine2Results),
+      searchRequest("pe-images", true, setEngine2Results),
     ]);
 
     setIsLoading(false);

@@ -67,7 +67,7 @@ interface RoboflowSearchDatasetPayload {
 
 interface RoboflowSearchImageParams {
   new: boolean;
-  query?: string | undefined;
+  prompt?: string | undefined;
   prompt_image?: string | undefined;
   index: string;
   workspace_id?: string;
@@ -112,8 +112,8 @@ export const roboflowSearchImages = async (
     payload.knn = true;
   }
 
-  if (searchImageParams.query) {
-    payload.prompt = searchImageParams.query;
+  if (searchImageParams.prompt) {
+    payload.prompt = searchImageParams.prompt;
   }
 
   if (searchImageParams.prompt_image) {

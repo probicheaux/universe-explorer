@@ -5,14 +5,14 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const {
-      query,
+      prompt,
       prompt_image,
       useKNN = false,
       index,
       workspace_id,
       sort,
     } = body as {
-      query?: string;
+      prompt?: string;
       prompt_image?: string;
       useKNN: boolean;
       index: string;
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     console.log("body", body);
 
     const results = await roboflowSearchImages({
-      query,
+      prompt,
       prompt_image,
       new: useKNN,
       index,
