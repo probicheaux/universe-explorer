@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, ChangeEvent, FormEvent } from "react";
+import { useState, FormEvent } from "react";
 import { cn } from "@/utils/cn";
 // Define type for a single search hit
 interface SearchHit {
@@ -63,7 +63,6 @@ export default function Home() {
 
     const searchRequest = async (
       index: string,
-      useKNN: boolean,
       setResults: (results: EngineResult) => void
     ) => {
       try {
@@ -127,8 +126,8 @@ export default function Home() {
     };
 
     await Promise.all([
-      searchRequest("clip-images-cvpr*", false, setEngine1Results),
-      searchRequest("pe-images*", false, setEngine2Results),
+      searchRequest("clip-images-cvpr*", setEngine1Results),
+      searchRequest("pe-images*", setEngine2Results),
     ]);
 
     setIsLoading(false);
