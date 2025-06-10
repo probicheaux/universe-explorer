@@ -121,7 +121,6 @@ export const searchDatasetsByDatasetIds = async (datasetIds: string[]) => {
       must: [{ terms: { dataset_id: validDatasetIds } }],
     },
   };
-
   return searchDatasets({
     query,
     size: 1000,

@@ -114,83 +114,70 @@ export default function Home() {
       hasImage: !!base64Image,
     });
 
-    const workspaceIds = ["8IqlCQUz92pfe9BWFgXB", "wUjRYGshKaYdH3RgrMSZ"];
-
     const searchRequest = async (
       index: string,
       useKNN: boolean,
       setResults: (results: EngineResult) => void
     ) => {
-      let totalLatency = 0;
-      const allHits: SearchHit[] = [];
-      const errors: string[] = [];
+      try {
+        const startTime = performance.now();
+        const response = await fetch("/api/search", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: textQuery || undefined,
+            prompt_image: base64Image || undefined,
+            index,
+          }),
+        });
+        const endTime = performance.now();
+        const latency = endTime - startTime;
 
-      const requests = workspaceIds.map(async (workspaceId) => {
-        try {
-          const startTime = performance.now();
-          const response = await fetch("/api/search", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              prompt: textQuery || undefined,
-              prompt_image: base64Image || undefined,
-              index,
-              workspace_id: workspaceId,
-            }),
-          });
-          const endTime = performance.now();
-          totalLatency += endTime - startTime;
-
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(
-              `Search failed for ${workspaceId}: ${response.statusText} ${
-                errorData.error || ""
-              }`
-            );
-          }
-
-          const results: ApiResponse = await response.json();
-          if (results.hits) {
-            allHits.push(...results.hits);
-          }
-        } catch (err: any) {
-          console.error(
-            `Search failed for index ${index} and workspace ${workspaceId}:`,
-            err
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            `Search failed: ${response.statusText} ${
+              errorData.error || ""
+            }`
           );
-          errors.push(err.message || `Request failed for ${workspaceId}`);
         }
-      });
 
-      await Promise.all(requests);
+        const results: ApiResponse = await response.json();
+        const allHits = results.hits || [];
+        allHits.sort((a, b) => b._score - a._score);
 
-      allHits.sort((a, b) => b._score - a._score);
+        const imageUrls = allHits
+          .map((hit) => {
+            const ownerId = hit.fields?.owner?.[0];
+            const imageId = hit.fields?.image_id?.[0];
+            if (ownerId && imageId) {
+              return `https://source.roboflow.com/${ownerId}/${imageId}/thumb.jpg`;
+            }
+            console.warn("Skipping hit due to missing owner/image_id:", hit);
+            return null;
+          })
+          .filter((url): url is string => url !== null);
 
-      const imageUrls = allHits
-        .map((hit) => {
-          const ownerId = hit.fields?.owner?.[0];
-          const imageId = hit.fields?.image_id?.[0];
-          if (ownerId && imageId) {
-            return `https://source.roboflow.com/${ownerId}/${imageId}/thumb.jpg`;
-          }
-          console.warn("Skipping hit due to missing owner/image_id:", hit);
-          return null;
-        })
-        .filter((url): url is string => url !== null);
-
-      setResults({
-        images: imageUrls,
-        latency: totalLatency,
-        error: errors.length > 0 ? errors.join(", ") : null,
-      });
+        setResults({
+          images: imageUrls,
+          latency: latency,
+          error: null,
+        });
+      } catch (err: any) {
+        console.error(`Search failed for index ${index}:`, err);
+        setResults({
+          images: [],
+          latency: null,
+          error: err.message || `Request failed for index ${index}`,
+        });
+      }
     };
 
     await Promise.all([
-      searchRequest("images-prod-1.0.3", false, setEngine1Results),
-      searchRequest("pe-images", true, setEngine2Results),
+      searchRequest("clip-images-cvpr*", false, setEngine1Results),
+      searchRequest("pe-images*", false, setEngine2Results),
     ]);
 
     setIsLoading(false);
@@ -340,7 +327,7 @@ export default function Home() {
                           engine1Results.images.map((imgUrl, index) => (
                             <button
                               key={`e1-${index}`}
-                              onClick={() => setSelectedImage(imgUrl)}
+                              onClick={() => setSelectedImage(imgUrl.replace("thumb.jpg", "original.jpg"))}
                               className="group relative overflow-hidden rounded-lg border border-gray-700 hover:border-blue-500 transition-all duration-200"
                             >
                               <img
@@ -401,7 +388,7 @@ export default function Home() {
                           engine2Results.images.map((imgUrl, index) => (
                             <button
                               key={`e2-${index}`}
-                              onClick={() => setSelectedImage(imgUrl)}
+                              onClick={() => setSelectedImage(imgUrl.replace("thumb.jpg", "original.jpg"))}
                               className="group relative overflow-hidden rounded-lg border border-gray-700 hover:border-blue-500 transition-all duration-200"
                             >
                               <img

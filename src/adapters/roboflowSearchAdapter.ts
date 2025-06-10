@@ -76,7 +76,7 @@ interface RoboflowSearchImageParams {
 
 interface RoboflowSearchImagePayload {
   new?: boolean;
-  prompt?: string;
+  query?: string;
   prompt_image?: string;
   knn?: boolean;
   index?: string;
@@ -135,7 +135,7 @@ export const roboflowSearchImages = async (
     "request we're making",
     `curl -X POST ${getEnv(
       "SEARCH_CONFIG_QUERY_URL"
-    )}/query-images -H "Content-Type: application/json" -H "Authorization: Bearer ${token}" -d '${JSON.stringify(
+    )}/roboql/images -H "Content-Type: application/json" -H "Authorization: Bearer ${token}" -d '${JSON.stringify(
       payload
     )}'`
   );
