@@ -25,7 +25,6 @@ interface EngineResult {
     url: string;
     ownerId: string;
   }[];
-  latency: number | null;
   error?: string | null;
 }
 
@@ -34,25 +33,16 @@ export default function Home() {
   const [textQuery, setTextQuery] = useState<string>("");
   const [engine1Results, setEngine1Results] = useState<EngineResult>({
     images: [],
-    latency: null,
     error: null,
   });
   const [engine2Results, setEngine2Results] = useState<EngineResult>({
     images: [],
-    latency: null,
     error: null,
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   // Add state for image preview modal
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-
-  // Add function to calculate latency improvement
-  const getLatencyImprovement = () => {
-    if (!engine1Results.latency || !engine2Results.latency) return null;
-    const improvement = engine1Results.latency / engine2Results.latency;
-    return improvement.toFixed(2);
-  };
 
   // Handler for triggering the search
   const handleSearch = async (event: FormEvent) => {
@@ -64,8 +54,8 @@ export default function Home() {
 
     setIsLoading(true);
     setError(null);
-    setEngine1Results({ images: [], latency: null, error: null });
-    setEngine2Results({ images: [], latency: null, error: null });
+    setEngine1Results({ images: [], error: null });
+    setEngine2Results({ images: [], error: null });
 
     console.log("Starting search with:", {
       textQuery,
@@ -77,7 +67,6 @@ export default function Home() {
       setResults: (results: EngineResult) => void
     ) => {
       try {
-        const startTime = performance.now();
         const response = await fetch("/api/search", {
           method: "POST",
           headers: {
@@ -88,8 +77,6 @@ export default function Home() {
             index,
           }),
         });
-        const endTime = performance.now();
-        const latency = endTime - startTime;
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -128,14 +115,12 @@ export default function Home() {
 
         setResults({
           images: imageObjects,
-          latency: latency,
           error: null,
         });
       } catch (err: any) {
         console.error(`Search failed for index ${index}:`, err);
         setResults({
           images: [],
-          latency: null,
           error: err.message || `Request failed for index ${index}`,
         });
       }
@@ -231,37 +216,7 @@ export default function Home() {
                       <h3 className="text-2xl font-bold mb-1 text-center text-white flex-shrink-0">
                         CLIP
                       </h3>
-                      <p className="text-xs text-center text-gray-500 mb-2 flex-shrink-0">
-                        (Latency:{" "}
-                        {engine1Results.latency
-                          ? `${engine1Results.latency.toFixed(0)} ms`
-                          : engine1Results.error
-                          ? "N/A"
-                          : "..."}{" "}
-                        )
-                      </p>
 
-                      {engine1Results.latency &&
-                        engine2Results.latency &&
-                        Number(getLatencyImprovement()) < 1 && (
-                          <p
-                            className={cn(
-                              "absolute top-2 left-2 text-xs text-center mb-2 flex-shrink-0 px-3 py-2 rounded-lg",
-                              getLatencyImprovement() &&
-                                Number(getLatencyImprovement()) < 1
-                                ? "text-green-400 bg-green-900/50"
-                                : "text-red-400 bg-red-900/50"
-                            )}
-                          >
-                            {Number(getLatencyImprovement()) < 1
-                              ? `${(
-                                  1 / Number(getLatencyImprovement())
-                                ).toFixed(2)}x faster`
-                              : `${(
-                                  1 / Number(getLatencyImprovement())
-                                ).toFixed(2)}x slower`}
-                          </p>
-                        )}
                       <div className="flex-1 flex flex-wrap gap-4 justify-center content-start overflow-y-auto p-1 custom-scrollbar">
                         {engine1Results.error ? (
                           <p className="text-red-500 text-sm px-2 text-center w-full">
@@ -305,32 +260,7 @@ export default function Home() {
                       <h3 className="text-2xl font-bold mb-1 text-center text-white flex-shrink-0">
                         Perception Encoder
                       </h3>
-                      <p className="text-xs text-center text-gray-500 mb-2 flex-shrink-0">
-                        (Latency:{" "}
-                        {engine2Results.latency
-                          ? `${engine2Results.latency.toFixed(0)} ms`
-                          : engine2Results.error
-                          ? "N/A"
-                          : "..."}{" "}
-                        )
-                      </p>
-                      {engine1Results.latency &&
-                        engine2Results.latency &&
-                        Number(getLatencyImprovement()) > 1 && (
-                          <p
-                            className={cn(
-                              "absolute top-2 left-2 text-xs text-center mb-2 flex-shrink-0 px-3 py-2 rounded-lg",
-                              getLatencyImprovement() &&
-                                Number(getLatencyImprovement()) > 1
-                                ? "text-green-400 bg-green-900/50"
-                                : "text-red-400 bg-red-900/50"
-                            )}
-                          >
-                            {Number(getLatencyImprovement()) > 1
-                              ? `${getLatencyImprovement()}x faster`
-                              : `${getLatencyImprovement()}x slower`}
-                          </p>
-                        )}
+
                       <div className="flex-1 flex flex-wrap gap-4 justify-center content-start overflow-y-auto p-1 custom-scrollbar">
                         {engine2Results.error ? (
                           <p className="text-red-500 text-sm px-2 text-center w-full">
