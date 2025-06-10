@@ -6,11 +6,13 @@ import { getEnv, getB64Env } from "@/utils/environment";
  */
 class SearchBackendAuth {
   private _tokenPromise: Promise<string> | null;
+  private _tokenExpiry: number | null;
   private _refreshInterval: NodeJS.Timeout | null;
   private _refreshIntervalMs: number;
 
   constructor() {
     this._tokenPromise = null;
+    this._tokenExpiry = null;
     this._refreshInterval = null;
     this._refreshIntervalMs = 45 * 60 * 1000; // 45 minutes
   }
@@ -20,7 +22,11 @@ class SearchBackendAuth {
    * @returns {Promise<string>} A promise that resolves to the JWT token
    */
   async getToken(): Promise<string> {
-    if (!this._tokenPromise) {
+    const isTokenExpired = this._tokenExpiry
+      ? Date.now() > this._tokenExpiry - 5 * 60 * 1000 // 5-minute buffer
+      : true;
+
+    if (!this._tokenPromise || isTokenExpired) {
       await this._refreshToken();
       this._startRefreshInterval();
     }
@@ -60,6 +66,9 @@ class SearchBackendAuth {
             setTimeout(() => this._refreshToken(), 10000);
             reject(err);
           } else {
+            if (token?.expiry_date) {
+              this._tokenExpiry = token.expiry_date;
+            }
             resolve(token?.id_token ?? "");
           }
         });
@@ -97,6 +106,7 @@ class SearchBackendAuth {
       this._refreshInterval = null;
     }
     this._tokenPromise = null;
+    this._tokenExpiry = null;
   }
 }
 

@@ -5,21 +5,27 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const {
-      prompt,
+      query,
       prompt_image,
       useKNN = false,
+      index,
+      workspace_id,
     } = body as {
-      prompt?: string;
+      query?: string;
       prompt_image?: string;
       useKNN: boolean;
+      index: string;
+      workspace_id?: string;
     };
 
     console.log("body", body);
 
     const results = await roboflowSearchImages({
-      prompt,
+      query,
       prompt_image,
       new: useKNN,
+      index,
+      ...(workspace_id && { workspace_id }),
     });
 
     return NextResponse.json(results);

@@ -67,15 +67,23 @@ interface RoboflowSearchDatasetPayload {
 
 interface RoboflowSearchImageParams {
   new: boolean;
-  prompt?: string | undefined;
+  query?: string | undefined;
   prompt_image?: string | undefined;
+  index: string;
+  workspace_id?: string;
 }
 
 interface RoboflowSearchImagePayload {
   new?: boolean;
-  prompt?: string;
+  query?: { queryPrompt: string };
   prompt_image?: string;
   knn?: boolean;
+  index?: string;
+  project?: string;
+  fields?: string[];
+  from?: number;
+  size?: number;
+  workspace_id?: string;
 }
 
 interface RoboflowSearchResponse {
@@ -90,29 +98,28 @@ export const roboflowSearchImages = async (
 ) => {
   const token = await getToken();
 
-  const OBJECTS_365_INDEXES = {
-    old: "images-prod-1.0.1-8iqlcquz92pfe9bwfgxb*",
-    new: "test-objects-365*",
-  };
-
-  const payload = {
-    index: OBJECTS_365_INDEXES[searchImageParams.new ? "new" : "old"],
+  const payload: RoboflowSearchImagePayload = {
+    index: searchImageParams.index,
     project: "roboflow-platform",
     fields: ["image_id", "owner"],
     from: 0,
     size: 100,
-  } as RoboflowSearchImagePayload;
+  };
 
   if (searchImageParams.new) {
     payload.knn = true;
   }
 
-  if (searchImageParams.prompt) {
-    payload.prompt = searchImageParams.prompt;
+  if (searchImageParams.query) {
+    payload.query = { queryPrompt: searchImageParams.query };
   }
 
   if (searchImageParams.prompt_image) {
     payload.prompt_image = searchImageParams.prompt_image;
+  }
+
+  if (searchImageParams.workspace_id) {
+    payload.workspace_id = searchImageParams.workspace_id;
   }
 
   console.log("payload", payload);

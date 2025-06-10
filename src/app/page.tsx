@@ -114,122 +114,70 @@ export default function Home() {
       hasImage: !!base64Image,
     });
 
-    // just so we don't have cache to interfere with the results
-    await fetch("/api/search", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt: textQuery || undefined,
-        prompt_image: base64Image || undefined,
-        useKNN: false,
-      }),
-    });
+    const workspaceId = "8IqlCQUz92pfe9BWFgXB";
 
-    // --- API Call for Engine 1 (Current Search - useKNN: false) ---
-    let latency1: number | null = null;
-    try {
-      const startTime1 = performance.now();
-      const response1 = await fetch("/api/search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt: textQuery || undefined,
-          prompt_image: base64Image || undefined,
-          useKNN: false,
-        }),
-      });
-      const endTime1 = performance.now();
-      latency1 = endTime1 - startTime1;
+    const searchRequest = async (
+      index: string,
+      useKNN: boolean,
+      setResults: (results: EngineResult) => void
+    ) => {
+      let latency: number | null = null;
+      try {
+        const startTime = performance.now();
+        const response = await fetch("/api/search", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            query: textQuery || undefined,
+            prompt_image: base64Image || undefined,
+            index,
+            workspace_id: workspaceId,
+          }),
+        });
+        const endTime = performance.now();
+        latency = endTime - startTime;
 
-      if (!response1.ok) {
-        const errorData = await response1.json().catch(() => ({}));
-        throw new Error(
-          `Search failed: ${response1.statusText} ${errorData.error || ""}`
-        );
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            `Search failed: ${response.statusText} ${errorData.error || ""}`
+          );
+        }
+
+        const results: ApiResponse = await response.json();
+        const imageUrls = (results.hits || [])
+          .map((hit) => {
+            const ownerId = hit.fields?.owner?.[0];
+            const imageId = hit.fields?.image_id?.[0];
+            if (ownerId && imageId) {
+              return `https://source.roboflow.com/${ownerId}/${imageId}/thumb.jpg`;
+            }
+            console.warn("Skipping hit due to missing owner/image_id:", hit);
+            return null;
+          })
+          .filter((url): url is string => url !== null);
+
+        setResults({
+          images: imageUrls,
+          latency: latency,
+          error: null,
+        });
+      } catch (err: any) {
+        console.error(`Search failed for index ${index}:`, err);
+        setResults({
+          images: [],
+          latency: latency,
+          error: err.message || "Search request failed",
+        });
       }
-      // Process results to build URLs
-      const results1: ApiResponse = await response1.json();
-      const imageUrls1 = (results1.hits || [])
-        .map((hit) => {
-          const ownerId = hit.fields?.owner?.[0];
-          const imageId = hit.fields?.image_id?.[0];
-          if (ownerId && imageId) {
-            return `https://source.roboflow.com/${ownerId}/${imageId}/thumb.jpg`;
-          }
-          console.warn("Skipping hit due to missing owner/image_id:", hit);
-          return null;
-        })
-        .filter((url): url is string => url !== null); // Filter out nulls and type guard
+    };
 
-      setEngine1Results({
-        images: imageUrls1,
-        latency: latency1,
-        error: null,
-      });
-    } catch (err: any) {
-      console.error("Engine 1 Search failed:", err);
-      setEngine1Results({
-        images: [],
-        latency: latency1,
-        error: err.message || "Search request failed",
-      });
-    }
-
-    // --- API Call for Engine 2 (KNN Search - useKNN: true) ---
-    let latency2: number | null = null;
-    try {
-      const startTime2 = performance.now();
-      const response2 = await fetch("/api/search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt: textQuery || undefined,
-          prompt_image: base64Image || undefined,
-          useKNN: true,
-        }),
-      });
-      const endTime2 = performance.now();
-      latency2 = endTime2 - startTime2;
-
-      if (!response2.ok) {
-        const errorData = await response2.json().catch(() => ({}));
-        throw new Error(
-          `Search failed: ${response2.statusText} ${errorData.error || ""}`
-        );
-      }
-      // Process results to build URLs
-      const results2: ApiResponse = await response2.json();
-      const imageUrls2 = (results2.hits || [])
-        .map((hit) => {
-          const ownerId = hit.fields?.owner?.[0];
-          const imageId = hit.fields?.image_id?.[0];
-          if (ownerId && imageId) {
-            return `https://source.roboflow.com/${ownerId}/${imageId}/thumb.jpg`;
-          }
-          console.warn("Skipping hit due to missing owner/image_id:", hit);
-          return null;
-        })
-        .filter((url): url is string => url !== null);
-
-      setEngine2Results({
-        images: imageUrls2,
-        latency: latency2,
-        error: null,
-      });
-    } catch (err: any) {
-      console.error("Engine 2 Search failed:", err);
-      setEngine2Results({
-        images: [],
-        latency: latency2,
-        error: err.message || "Search request failed",
-      });
-    }
+    await Promise.all([
+      searchRequest("images-prod-1.0.3", false, setEngine1Results),
+      searchRequest("pe-images-prod-1.0.3", false, setEngine2Results),
+    ]);
 
     setIsLoading(false);
   };
@@ -330,7 +278,7 @@ export default function Home() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
                     <div className="relative bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col max-h-[calc(100vh-20rem)]">
                       <h3 className="text-lg font-medium mb-1 text-center text-gray-400 flex-shrink-0">
-                        Current search
+                        images-prod-1.0.3
                       </h3>
                       <p className="text-xs text-center text-gray-500 mb-2 flex-shrink-0">
                         (Latency:{" "}
@@ -396,7 +344,7 @@ export default function Home() {
                     </div>
                     <div className="relative bg-gray-800/50 p-4 rounded-lg border border-gray-700 flex flex-col max-h-[calc(100vh-20rem)]">
                       <h3 className="text-lg font-medium mb-1 text-center text-gray-400 flex-shrink-0">
-                        Built-in knn from ES
+                        pe-images-prod-1.0.3
                       </h3>
                       <p className="text-xs text-center text-gray-500 mb-2 flex-shrink-0">
                         (Latency:{" "}
