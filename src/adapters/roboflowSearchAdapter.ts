@@ -76,7 +76,7 @@ interface RoboflowSearchImageParams {
 
 interface RoboflowSearchImagePayload {
   new?: boolean;
-  query?: string;
+  prompt?: string;
   prompt_image?: string;
   knn?: boolean;
   index?: string;
@@ -111,7 +111,7 @@ export const roboflowSearchImages = async (
   payload.knn = true;
 
   if (searchImageParams.prompt) {
-    payload.query = searchImageParams.prompt;
+    payload.prompt = searchImageParams.prompt;
   }
 
   if (searchImageParams.prompt_image) {
