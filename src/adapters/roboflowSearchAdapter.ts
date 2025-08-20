@@ -86,6 +86,7 @@ interface RoboflowSearchImagePayload {
   size?: number;
   workspace_id?: string;
   sort?: RoboflowSearchSortQueryTerm[];
+  k?: number;
 }
 
 interface RoboflowSearchResponse {
@@ -108,7 +109,8 @@ export const roboflowSearchImages = async (
     size: 100,
   };
 
-  payload.knn = false;
+  payload.knn = true;
+  payload.k = 100;
 
   if (searchImageParams.prompt) {
     payload.prompt = searchImageParams.prompt;
