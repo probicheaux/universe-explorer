@@ -108,7 +108,7 @@ export const roboflowSearchImages = async (
     size: 100,
   };
 
-  payload.knn = true;
+  payload.knn = false;
 
   if (searchImageParams.prompt) {
     payload.prompt = searchImageParams.prompt;
