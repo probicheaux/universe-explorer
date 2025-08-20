@@ -76,7 +76,7 @@ interface RoboflowSearchImageParams {
 
 interface RoboflowSearchImagePayload {
   new?: boolean;
-  prompt?: string;
+  query?: string;
   prompt_image?: string;
   knn?: boolean;
   index?: string;
@@ -109,11 +109,11 @@ export const roboflowSearchImages = async (
     size: 100,
   };
 
-  payload.knn = true;
-  payload.k = 100;
+  // payload.knn = true;
+  // payload.k = 100;
 
   if (searchImageParams.prompt) {
-    payload.prompt = searchImageParams.prompt;
+    payload.query = searchImageParams.prompt;
   }
 
   if (searchImageParams.prompt_image) {
@@ -135,7 +135,7 @@ export const roboflowSearchImages = async (
     "request we're making",
     `curl -X POST ${getEnv(
       "SEARCH_CONFIG_QUERY_URL"
-    )}/query-images -H "Content-Type: application/json" -H "Authorization: Bearer ${token}" -d '${JSON.stringify(
+    )}/roboql/images -H "Content-Type: application/json" -H "Authorization: Bearer ${token}" -d '${JSON.stringify(
       payload
     )}'`
   );
@@ -143,7 +143,7 @@ export const roboflowSearchImages = async (
   try {
     const results = await axios({
       method: "POST",
-      url: getEnv("SEARCH_CONFIG_QUERY_URL") + "/query-images",
+      url: getEnv("SEARCH_CONFIG_QUERY_URL") + "/roboql/images",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
